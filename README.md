@@ -1,6 +1,7 @@
 # Group Members 
 1. Dhruv Sanchety 
 2. Naveena Attota
+![alt text](https://github.com/scalableinternetservices/xcurrency/blob/master/team_photos/naveena.jpg?raw=true)
 3. Sokchetra Eung
 4. Evan Lin 
 
