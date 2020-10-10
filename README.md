@@ -4,6 +4,7 @@
 ![alt text](https://github.com/scalableinternetservices/xcurrency/blob/master/team_photos/naveena.jpg?raw=true)
 3. Sokchetra Eung
 4. Evan Lin 
+![alt text](https://github.com/scalableinternetservices/xcurrency/blob/master/team_photos/evan.png?raw=true)
 
 
 # bespin
