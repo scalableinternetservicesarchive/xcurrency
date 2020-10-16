@@ -1,14 +1,14 @@
-# Group Members 
-1. Dhruv Sanchety 
+# Group Members
+1. Dhruv Sanchety
 ![alt_text](https://github.com/scalableinternetservices/xcurrency/blob/master/team_photos/ad7cbbbc-8e54-4e3a-976d-97c6c9d1f882.JPG)
 2. Naveena Attota
 ![alt text](https://github.com/scalableinternetservices/xcurrency/blob/master/team_photos/naveena.jpg?raw=true)
 3. Sokchetra Eung
 ![alt text](https://github.com/scalableinternetservices/xcurrency/blob/master/team_photos/sokchetra.jpg?raw=true)
-4. Evan Lin 
+4. Evan Lin
 ![alt text](https://github.com/scalableinternetservices/xcurrency/blob/master/team_photos/evan.png?raw=true)
 
-
+let me test my git contributions real quick, dont pull it.
 # bespin
 
 Welcome to Cloud City!
