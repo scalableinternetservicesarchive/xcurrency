@@ -8,7 +8,6 @@
 4. Evan Lin
 ![alt text](https://github.com/scalableinternetservices/xcurrency/blob/master/team_photos/evan.png?raw=true)
 
-Hello, me!; let me test my git contributions real quick, dont pull it.
 # bespin
 
 Welcome to Cloud City!
