@@ -59,7 +59,7 @@ export function Login() {
         <Input $hasError={err.password} $onChange={setPassword} $onSubmit={login} name="password" type="password" />
       </div>
       <div className="mt3">
-        <Button onClick={login}>Sign Up</Button>
+        <Button onClick={login}>Login</Button>
       </div>
     </>
   )
