@@ -15,6 +15,7 @@ import { getOperationAST, parse as parseGraphql, specifiedRules, subscribe as gq
 import { GraphQLServer } from 'graphql-yoga'
 import { forAwaitEach, isAsyncIterable } from 'iterall'
 import path from 'path'
+import plaid from 'plaid'
 import 'reflect-metadata'
 import { v4 as uuidv4 } from 'uuid'
 import { checkEqual, Unpromise } from '../../common/src/util'
@@ -50,6 +51,51 @@ server.express.get('/', (req, res) => {
 server.express.get('/app/*', (req, res) => {
   console.log('GET /app')
   renderApp(req, res)
+})
+
+const client = new plaid.Client({
+  clientID: '5f92801b3cd69a001204999a',
+  secret: 'e48ecaf259feb09f0c4bed217c5ddc',
+  env: plaid.environments.sandbox,
+  options: {},
+})
+
+server.express.post('/get_link_token', async (req, res) => {
+  try {
+    // Get the client_user_id by searching for the current user
+    const { userEmail } = req.body
+
+    // Create the link_token with all of your configurations
+    const tokenResponse = await client.createLinkToken({
+      user: {
+        client_user_id: userEmail,
+      },
+      client_name: 'My App',
+      products: ['auth'],
+      country_codes: ['US'],
+      language: 'en',
+      webhook: 'https://webhook.sample.com',
+    })
+    return res.send({ link_token: tokenResponse.link_token })
+  } catch (e) {
+    // Display error on client
+    return res.send({ error: e.message })
+  }
+})
+
+server.express.post('/get_access_token', async (req, res) => {
+  try {
+    const PUBLIC_TOKEN = req.body.public_token
+    // Exchange the client-side public_token for a server access_token
+    const tokenResponse = await client.exchangePublicToken(PUBLIC_TOKEN)
+    // Save the access_token and item_id to a persistent database
+    const ACCESS_TOKEN = tokenResponse.access_token
+    const ITEM_ID = tokenResponse.item_id
+    console.log(ACCESS_TOKEN, ITEM_ID)
+  } catch (e) {
+    // Display error on client
+    return res.send({ error: e.message })
+  }
 })
 
 server.express.post(

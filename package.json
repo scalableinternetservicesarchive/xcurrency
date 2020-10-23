@@ -44,6 +44,7 @@
     "bcrypt": "^5.0.0",
     "bcryptjs": "^2.4.3",
     "graphql": "^15.3.0",
+    "plaid": "^8.0.0",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-responsive": "^8.1.0",

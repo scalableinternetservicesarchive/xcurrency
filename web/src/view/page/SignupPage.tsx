@@ -1,22 +1,35 @@
 import { RouteComponentProps } from '@reach/router'
 import * as bcrypt from 'bcryptjs'
 import * as React from 'react'
-import { check } from '../../../../common/src/util'
 import { Button } from '../../style/button'
 import { Input } from '../../style/input'
 import { Spacer } from '../../style/spacer'
 import { AppRouteParams } from '../nav/route'
 import { toastErr } from '../toast/toast'
 import { Page } from './Page'
+const plaid = require('plaid')
 
 interface SignupPageProps extends RouteComponentProps, AppRouteParams {}
 
-export function SignupPage(props: SignupPageProps) {
-  return (
-    <Page>
-      <Signup />
-    </Page>
-  )
+export class SignupPage extends React.Component {
+  constructor(props: SignupPageProps) {
+    super(props)
+  }
+
+  componentDidMount() {
+    const script = document.createElement('script')
+    script.src = 'https://cdn.plaid.com/link/v2/stable/link-initialize.js'
+    script.async = true
+    document.body.appendChild(script)
+  }
+
+  render() {
+    return (
+      <Page>
+        <Signup />
+      </Page>
+    )
+  }
 }
 
 function Signup() {
@@ -29,9 +42,8 @@ function Signup() {
   // reset error when email/password change
   React.useEffect(() => setError({ ...err, email: !validateEmail(email) }), [email])
   React.useEffect(() => setError({ ...err, password: false }), [password])
-  React.useEffect(() => setError({ ...err, password: false }), [name])
 
-  async function signup() {
+  function signup() {
     if (!validateForm(email, password, setError)) {
       return
     }
@@ -41,19 +53,34 @@ function Signup() {
       if (err) {
         console.log("Couldn't hash the password!")
       } else {
-        console.log(JSON.stringify({ name, email, password: hashedPassword, country }))
         fetch('/auth/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, email, password: hashedPassword, country }),
         })
-          .then(res => {
-            check(res.ok, 'response status ' + res.status)
+          .then(() => {
             console.log('successfully created user')
-            return res.text()
           })
-          .catch(() => {
-            console.log('request failed')
+          .then(() => {
+            return fetch('/get_link_token', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email }),
+            })
+          })
+          .then(token => {
+            const linkHandler = plaid.create({
+              token,
+              onSuccess: (public_token: string) => {
+                // Send the public_token to your app server.
+                fetch('/get_access_token', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ public_token }),
+                })
+              },
+            })
+            linkHandler.open()
           })
       }
     })
