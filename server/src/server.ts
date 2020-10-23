@@ -7,6 +7,7 @@ require('honeycomb-beeline')({
 })
 
 import assert from 'assert'
+import * as bcrypt from 'bcryptjs'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import { json, raw, RequestHandler, static as expressStatic } from 'express'
@@ -59,7 +60,7 @@ server.express.post(
     const password = req.body.password
 
     const user = await User.findOne({ where: { email } })
-    if (!user || password !== Config.adminPassword) {
+    if (!user || (await bcrypt.compare(password, user.password))) {
       res.status(403).send('Forbidden')
       return
     }
@@ -78,6 +79,17 @@ server.express.post(
       .status(200)
       .cookie('authToken', authToken, { maxAge: SESSION_DURATION, path: '/', httpOnly: true, secure: Config.isProd })
       .send('Success!')
+  })
+)
+
+server.express.post(
+  '/auth/signup',
+  asyncRoute(async (req, res) => {
+    console.log('POST /auth/signup')
+
+    const { name, email, password, country } = req.body
+    await User.insert({ name, email, password, country })
+    res.status(200).send('Success!')
   })
 )
 

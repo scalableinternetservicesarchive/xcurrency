@@ -23,7 +23,6 @@ export function Login() {
       toastErr('invalid email/password')
       return
     }
-
     fetch('/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
