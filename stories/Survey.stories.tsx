@@ -5,7 +5,7 @@ import { Survey as SurveyComponent, Surveys as SurveysComponent } from '../web/s
 export default {
   title: 'Survey',
 } as Meta
-
+//s
 const SurveyTemplate: Story<{ surveyId: number }> = args => <SurveyComponent {...args} />
 const SurveysTemplate: Story = () => <SurveysComponent />
 
