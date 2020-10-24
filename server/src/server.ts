@@ -92,6 +92,17 @@ server.express.post(
     res.status(200).send('Success!')
   })
 )
+/*
+server.express.post(
+'/confirm-request',
+asyncRoute(async (req, res) => {
+  //handle request
+  //verify if have enough money
+  //yes, substract money, generate ID for the request, and store request in DB.
+  //no, route to a not enough page
+
+})
+) */
 
 server.express.post(
   '/auth/logout',

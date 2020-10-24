@@ -10,6 +10,7 @@ import { style } from '../style/styled'
 import { fetchUser } from './auth/fetchUser'
 import { UserContext, UserCtx } from './auth/user'
 import { Route } from './nav/route'
+import { ExchangeForm } from './page/exchange_form'
 import { HomePage } from './page/HomePage'
 import { LecturesPage } from './page/LecturesPage'
 import { LoginPage } from './page/LoginPage'
@@ -57,6 +58,7 @@ export function AppBody() {
         <HomePage path={Route.HOME} />
         <LoginPage path={Route.LOGIN} />
         <SignupPage path={Route.SIGNUP} />
+        <ExchangeForm path={Route.EXCHANGE} />
         <LecturesPage path={Route.LECTURES} />
         <ProjectsPage path={Route.PROJECTS} />
         <PlaygroundPage path={Route.PLAYGROUND} />
