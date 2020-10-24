@@ -53,13 +53,37 @@ function Exchange() {
         <label className="db fw4 lh-copy f6" htmlFor="fromCurrency">
           From currency:
         </label>
-        <Input $onChange={setfromCurrency} name="fromCurrency" type="text" />
+        <select
+          value={fromCurrency}
+          onChange={event => {
+            setfromCurrency(event.target.value)
+          }}
+        >
+          <option value="USD">USD</option>
+          <option value="CAD">CAD</option>
+          <option value="JPY">JPY</option>
+          <option value="BRL">BRL</option>
+          <option value="INR">INR</option>
+          <option value="CNY">CNY</option>
+        </select>
       </div>
       <div className="mt3">
         <label className="db fw4 lh-copy f6" htmlFor="toCurrency">
           To currency:
         </label>
-        <Input $onChange={setToCurrency} name="toCurrency" type="text" />
+        <select
+          value={toCurrency}
+          onChange={event => {
+            setToCurrency(event.target.value)
+          }}
+        >
+          <option value="USD">USD</option>
+          <option value="CAD">CAD</option>
+          <option value="JPY">JPY</option>
+          <option value="BRL">BRL</option>
+          <option value="INR">INR</option>
+          <option value="CNY">CNY</option>
+        </select>
       </div>
       <div className="mt3">
         <label className="db fw4 lh-copy f6" htmlFor="amountWant">
