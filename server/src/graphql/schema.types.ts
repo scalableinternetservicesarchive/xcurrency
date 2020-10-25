@@ -16,6 +16,7 @@ export interface Mutation {
   __typename?: 'Mutation'
   answerSurvey: Scalars['Boolean']
   nextSurveyQuestion?: Maybe<Survey>
+  recordRequest: Scalars['Boolean']
 }
 
 export interface MutationAnswerSurveyArgs {
@@ -24,6 +25,10 @@ export interface MutationAnswerSurveyArgs {
 
 export interface MutationNextSurveyQuestionArgs {
   surveyId: Scalars['Int']
+}
+
+export interface MutationRecordRequestArgs {
+  input: ExchangeRequestInput
 }
 
 export interface Query {
@@ -75,6 +80,28 @@ export interface SurveyQuestion {
   choices?: Maybe<Array<Scalars['String']>>
   answers: Array<SurveyAnswer>
   survey: Survey
+}
+
+//define interface of ExchangeRequest
+export interface ExchangeRequest {
+  __typename?: 'ExchangeRequest'
+  requestId: Scalars['Int']
+  amountWant: Scalars['Float']
+  bidRate: Scalars['Float']
+  amountPay: Scalars['Float']
+  currentRate: Scalars['Float']
+  fromCurrency: Scalars['String']
+  toCurrency: Scalars['String']
+}
+
+export interface ExchangeRequestInput {
+  requestId: Scalars['Int']
+  amountWant: Scalars['Float']
+  bidRate: Scalars['Float']
+  amountPay: Scalars['Float']
+  currentRate: Scalars['Float']
+  fromCurrency: Scalars['String']
+  toCurrency: Scalars['String']
 }
 
 export interface User {
@@ -174,11 +201,14 @@ export type ResolversTypes = {
   String: ResolverTypeWrapper<Scalars['String']>
   Survey: ResolverTypeWrapper<Survey>
   Boolean: ResolverTypeWrapper<Scalars['Boolean']>
+  Float: ResolverTypeWrapper<Scalars['Float']>
   SurveyQuestion: ResolverTypeWrapper<SurveyQuestion>
   SurveyAnswer: ResolverTypeWrapper<SurveyAnswer>
   Mutation: ResolverTypeWrapper<{}>
   SurveyInput: SurveyInput
+  ExchangeRequestInput: ExchangeRequestInput
   Subscription: ResolverTypeWrapper<{}>
+  ExchangeRequest: ResolverTypeWrapper<ExchangeRequest>
 }
 
 /** Mapping between all available schema types and the resolvers parents */
@@ -187,15 +217,19 @@ export type ResolversParentTypes = {
   User: User
   Int: Scalars['Int']
   String: Scalars['String']
+  Float: Scalars['Float']
   Survey: Survey
   Boolean: Scalars['Boolean']
   SurveyQuestion: SurveyQuestion
   SurveyAnswer: SurveyAnswer
+  ExchangeRequest: ExchangeRequest
   Mutation: {}
   SurveyInput: SurveyInput
+  ExchangeRequestInput: ExchangeRequestInput
   Subscription: {}
 }
 
+// Add Mutation resolver interfaces
 export type MutationResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']
@@ -211,6 +245,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationNextSurveyQuestionArgs, 'surveyId'>
+  >
+  recordRequest?: Resolver<
+    ResolversTypes['Boolean'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationRecordRequestArgs, 'input'>
   >
 }
 
@@ -241,6 +281,8 @@ export type SubscriptionResolvers<
   >
 }
 
+//adding types resolvers.
+
 export type SurveyResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['Survey'] = ResolversParentTypes['Survey']
@@ -261,6 +303,19 @@ export type SurveyAnswerResolvers<
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>
   answer?: Resolver<ResolversTypes['String'], ParentType, ContextType>
   question?: Resolver<ResolversTypes['SurveyQuestion'], ParentType, ContextType>
+  __isTypeOf?: IsTypeOfResolverFn<ParentType>
+}
+
+export type ExchangeRequestResolver<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['ExchangeRequest'] = ResolversParentTypes['ExchangeRequest']
+  > = {
+  requestId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>
+  amountWant?: Resolver<ResolversTypes['Float'], ParentType, ContextType>
+  bidRate?: Resolver<ResolversTypes['Float'], ParentType, ContextType>
+  amountPay?: Resolver<ResolversTypes['Float'], ParentType, ContextType>
+  fromCurrency?: Resolver<ResolversTypes['String'], ParentType, ContextType>
+  toCurrency?: Resolver<ResolversTypes['String'], ParentType, ContextType>
   __isTypeOf?: IsTypeOfResolverFn<ParentType>
 }
 
@@ -295,6 +350,7 @@ export type Resolvers<ContextType = any> = {
   SurveyAnswer?: SurveyAnswerResolvers<ContextType>
   SurveyQuestion?: SurveyQuestionResolvers<ContextType>
   User?: UserResolvers<ContextType>
+  ExchangeRequest?: ExchangeRequestResolver<ContextType>
 }
 
 /**
