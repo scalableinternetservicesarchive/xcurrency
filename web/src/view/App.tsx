@@ -15,6 +15,7 @@ import { HomePage } from './page/HomePage'
 import { LecturesPage } from './page/LecturesPage'
 import { LoginPage } from './page/LoginPage'
 import { PlaygroundPage } from './page/PlaygroundPage'
+import { ProfilePage } from './page/ProfilePage'
 import { ProjectsPage } from './page/ProjectsPage'
 import { SignupPage } from './page/SignupPage'
 
@@ -58,6 +59,7 @@ export function AppBody() {
         <HomePage path={Route.HOME} />
         <LoginPage path={Route.LOGIN} />
         <SignupPage path={Route.SIGNUP} />
+        <ProfilePage path={Route.PROFILE} />
         <ExchangeForm path={Route.EXCHANGE} />
         <LecturesPage path={Route.LECTURES} />
         <ProjectsPage path={Route.PROJECTS} />
