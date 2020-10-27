@@ -49,18 +49,12 @@ export function ProfilePage(props: ProfilePageProps) {
           </tbody>
         </Table>
         <Spacer $h4 />
-        <IntroText>Transfers Information</IntroText>
+        <IntroText>Other Balances Information</IntroText>
         <Table>
           <tbody>
             <Transfer
-              countryFrom="Money From"
-              countryTo="Money Transfered To"
-              conversion="Conversion"
-            />
-            <Transfer
-              countryFrom="UK"
-              countryTo="USA"
-              conversion="€30 -> $40"
+              country="USA"
+              amount="blah"
             />
           </tbody>
         </Table>
@@ -112,16 +106,14 @@ function Account(props: {
 }
 
 function Transfer(props: {
-  countryFrom: string
-  countryTo: string
-  conversion: string
+  country: string
+  amount: string
 }) {
   return (
     <TR>
       <BodyText>
-        <TD>{props.countryFrom}</TD>
-        <TD>{props.countryTo}</TD>
-        <TD>{props.conversion}</TD>
+        <TD>{props.country}</TD>
+        <TD>{props.amount}</TD>
       </BodyText>
     </TR>
   )
