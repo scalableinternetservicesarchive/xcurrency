@@ -12,7 +12,7 @@ import { link } from './Link'
 import { getLoginPath, getPath, getSurveyPath, Route } from './route'
 
 const title = {
-  name: 'CS188',
+  name: 'XCurrency',
   path: getPath(Route.HOME),
   title: true,
 }
@@ -21,14 +21,6 @@ const otherTabs = [
   {
     name: 'lectures',
     path: getPath(Route.LECTURES),
-  },
-  {
-    name: 'projects',
-    path: getPath(Route.PROJECTS),
-  },
-  {
-    name: 'playground',
-    path: getPath(Route.PLAYGROUND),
   },
 ]
 
@@ -65,6 +57,8 @@ export function NavBar() {
         <div id="nav-modal" />
         <Nav>
           <NavItem {...title} />
+
+
 
           {/* push tab to the right on small screens */}
           {isSmall && <div style={{ flex: 1 }} />}
@@ -119,7 +113,7 @@ const Nav = style(
   'nav',
   'flex white items-center list pa2 ph4 ph5-ns ph7-l avenir f4',
   (p: { $isSubNav?: boolean }) => ({
-    background: `linear-gradient(90deg, ${'#005587'} 0%, ${'#2774AE'} 100%)`,
+    background: `linear-gradient(90deg, ${'#005587'} 0%)`,
     opacity: '0.9',
     paddingTop: p.$isSubNav ? 0 : undefined,
     paddingBottom: p.$isSubNav ? 0 : undefined,
@@ -138,10 +132,10 @@ function NavItem(props: { name: string; path: string; title?: boolean }) {
 
 const NavAnchor = style(
   'a',
-  'link near-white hover-bg-black-10 pa2 br2',
+  'link black hover-bg-black-10 pa2 br2',
   (p: { $bold?: boolean; $title?: boolean }) => ({
-    fontWeight: p.$bold ? 600 : 200,
-    fontSize: p.$title ? '1.5em' : undefined,
+    fontWeight: 200,
+    fontSize: undefined,
   })
 )
 const NavLink = link(NavAnchor)
@@ -156,7 +150,7 @@ const NavMenuModal = style(
 
 const ToastContainer = style<'div', { $isError?: boolean }>(
   'div',
-  'avenir f5 fixed bottom-0 white right-0 br3 pa3 bg-black-90 mb3 mr4 mr5-ns mr7-l',
+  'avenir f5 fixed bottom-0 right-0 br3 pa3 bg-black-90 mb3 mr4 mr5-ns mr7-l',
   () => ({
     // color: p.$theme.textColor(p.$isError),
     zIndex: 100,
