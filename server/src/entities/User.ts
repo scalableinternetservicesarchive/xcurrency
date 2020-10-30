@@ -1,5 +1,7 @@
-import { BaseEntity, Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+import { BaseEntity, Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
 import { User as GraphqlUser, UserType } from '../graphql/schema.types'
+import { Account } from './Accounts'
+import { ExchangeRequest } from './ExchangeRequest'
 
 @Entity()
 export class User extends BaseEntity implements GraphqlUser {
@@ -36,4 +38,11 @@ export class User extends BaseEntity implements GraphqlUser {
   password: string
 
   country: string
+
+  @OneToMany(() => ExchangeRequest, exchangeRequest => exchangeRequest.user)
+  exchangeRequest: ExchangeRequest[];
+
+  @OneToMany(()=> Account, account => account.user)
+  account: Account[];
+
 }
