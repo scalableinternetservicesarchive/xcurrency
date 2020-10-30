@@ -6,6 +6,9 @@ export class UserCtx {
   isAdmin() {
     return this.user && this.user?.userType === UserType.ADMIN
   }
+  isLoggedIn() {
+    return Boolean(this.user)
+  }
 }
 
 export const UserContext = React.createContext<UserCtx>(new UserCtx(null))

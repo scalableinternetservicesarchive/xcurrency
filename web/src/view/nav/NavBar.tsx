@@ -1,11 +1,10 @@
 import { useLocation } from '@reach/router'
 import * as React from 'react'
 import { useContext, useEffect } from 'react'
-import ReactDOM from 'react-dom'
 import { useMediaQuery } from 'react-responsive'
 import { breakpoints } from '../../style/breakpoints'
-import { MenuIcon } from '../../style/icons'
 import { style } from '../../style/styled'
+import { Logout } from '../auth/Logout'
 import { UserContext } from '../auth/user'
 import { addToastListener, removeToastListener, Toast, ToastType } from '../toast/toast'
 import { link } from './Link'
@@ -17,18 +16,14 @@ const title = {
   title: true,
 }
 
-const otherTabs = [
-  {
-    name: 'lectures',
-    path: getPath(Route.LECTURES),
-  },
-]
-
 export function NavBar() {
-  const location = useLocation()
+  // const location = useLocation()
   const isSmall = useMediaQuery(breakpoints.small)
-  const [showMenu, setShowMenu] = React.useState(false)
+  // const [showMenu, setShowMenu] = React.useState(false)
+  // const [user, setUser] = React.useState(false)
   const [toast, setToast] = React.useState<Toast | null>(null)
+
+  const user = useContext(UserContext)
 
   function onToast(feedback: Toast) {
     setToast(feedback)
@@ -48,8 +43,6 @@ export function NavBar() {
     return void 0
   }, [toast])
 
-  const tabs = isSmall ? [otherTabs.find(t => location.pathname.startsWith(t.path)) || otherTabs[0]] : otherTabs
-
   return (
     <>
       <div className="fixed top-0 left-0 w-100 avenir">
@@ -58,17 +51,18 @@ export function NavBar() {
         <Nav>
           <NavItem {...title} />
 
-
-
           {/* push tab to the right on small screens */}
           {isSmall && <div style={{ flex: 1 }} />}
 
           {/* layout additional tabs (possibly hidden for small screens) */}
-          {tabs.map((tab, i) => (
+          {/* {tabs.map((tab, i) => (
             <NavItem key={i} {...tab} />
-          ))}
+          ))} */}
+          {user.isLoggedIn() && <Logout />}
+          {!user.isLoggedIn() && <NavItem name="Log In" path={getPath(Route.LOGIN)} />}
+          {!user.isLoggedIn() && <NavItem name="Sign Up" path={getPath(Route.SIGNUP)} />}
 
-          {isSmall && <NavMenu show={showMenu} onClick={() => setShowMenu(!showMenu)} />}
+          {/* {isSmall && <NavMenu show={showMenu} onClick={() => setShowMenu(!showMenu)} />} */}
         </Nav>
         <SubNav />
       </div>
@@ -77,22 +71,22 @@ export function NavBar() {
   )
 }
 
-function NavMenu(props: { show: boolean; onClick: () => void }) {
-  return (
-    <NavMenuButton onClick={props.onClick}>
-      <MenuIcon />
-      {props.show && (
-        <Modal>
-          <NavMenuModal>
-            {otherTabs.map((tab, i) => (
-              <NavItem key={i} {...tab} />
-            ))}
-          </NavMenuModal>
-        </Modal>
-      )}
-    </NavMenuButton>
-  )
-}
+// function NavMenu(props: { show: boolean; onClick: () => void }) {
+//   return (
+//     <NavMenuButton onClick={props.onClick}>
+//       <MenuIcon />
+//       {props.show && (
+//         <Modal>
+//           <NavMenuModal>
+//             {otherTabs.map((tab, i) => (
+//               <NavItem key={i} {...tab} />
+//             ))}
+//           </NavMenuModal>
+//         </Modal>
+//       )}
+//     </NavMenuButton>
+//   )
+// }
 
 function SubNav() {
   const location = useLocation()
@@ -130,33 +124,30 @@ function NavItem(props: { name: string; path: string; title?: boolean }) {
   )
 }
 
-const NavAnchor = style(
-  'a',
-  'link black hover-bg-black-10 pa2 br2',
-  (p: { $bold?: boolean; $title?: boolean }) => ({
-    fontWeight: 200,
-    fontSize: undefined,
-  })
-)
+const NavAnchor = style('a', 'link black hover-bg-black-10 pa2 br2', (p: { $bold?: boolean; $title?: boolean }) => ({
+  fontWeight: 200,
+  fontSize: undefined,
+}))
 const NavLink = link(NavAnchor)
 
-const NavMenuButton = style('div', 'ml3 pa2 hover-bg-black-10 pointer')
+// const NavMenuButton = style('div', 'ml3 pa2 hover-bg-black-10 pointer')
 
-const NavMenuModal = style(
-  'div',
-  'avenir f4 fixed flex flex-column items-center top-0 br3 pa3 right-0 bg-black-90 mt5 mr4 mr5-ns',
-  { zIndex: 100 }
-)
+// const NavMenuModal = style(
+//   'div',
+//   'avenir f4 fixed flex flex-column items-center top-0 br3 pa3 right-0 bg-black-90 mt5 mr4 mr5-ns',
+//   { zIndex: 100 }
+// )
 
 const ToastContainer = style<'div', { $isError?: boolean }>(
   'div',
   'avenir f5 fixed bottom-0 right-0 br3 pa3 bg-black-90 mb3 mr4 mr5-ns mr7-l',
-  () => ({
-    // color: p.$theme.textColor(p.$isError),
+  p => ({
+    color: '#FFFFFF',
+    backgroundColor: p.$isError ? '#C64244' : '#3DAAC5',
     zIndex: 100,
   })
 )
 
-function Modal(props: { children: React.ReactNode }) {
-  return ReactDOM.createPortal(props.children, document.querySelector('#nav-modal')!)
-}
+// function Modal(props: { children: React.ReactNode }) {
+//   return ReactDOM.createPortal(props.children, document.querySelector('#nav-modal')!)
+// }

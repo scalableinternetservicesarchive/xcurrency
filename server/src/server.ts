@@ -60,7 +60,7 @@ server.express.post(
     const password = req.body.password
 
     const user = await User.findOne({ where: { email } })
-    if (!user || (await bcrypt.compare(password, user.password))) {
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       res.status(403).send('Forbidden')
       return
     }
@@ -87,11 +87,18 @@ server.express.post(
   asyncRoute(async (req, res) => {
     console.log('POST /auth/signup')
 
-    const { name, email, password, country } = req.body
-    await User.insert({ name, email, password, country })
-    res.status(200).send('Success!')
+    const { name, email, password } = req.body
+    const user = await User.findOne({ where: { email } })
+    if (user) {
+      console.log('Already found user in the database!')
+      return res.sendStatus(400)
+    }
+    await User.insert({ name, email, password })
+    console.log('Inserted user into database!')
+    return res.status(200).send('Success!')
   })
 )
+
 /*
 server.express.post(
 '/confirm-request',

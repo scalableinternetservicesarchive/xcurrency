@@ -34,6 +34,4 @@ export class User extends BaseEntity implements GraphqlUser {
     length: 100,
   })
   password: string
-
-  country: string
 }
