@@ -21,8 +21,12 @@ import { checkEqual, Unpromise } from '../../common/src/util'
 import { Config } from './config'
 import { migrate } from './db/migrate'
 import { initORM } from './db/sql'
+import { Account } from './entities/Accounts'
+import { ExchangeRequest } from './entities/ExchangeRequest'
 import { Session } from './entities/Session'
+import { Transaction } from './entities/Transaction'
 import { User } from './entities/User'
+import { checkForMatch, exReq } from './exchangeAlgorithm'
 import { getSchema, graphqlRoot, pubsub } from './graphql/api'
 import { ConnectionManager } from './graphql/ConnectionManager'
 import { expressLambdaProxy } from './lambda/handler'
@@ -60,7 +64,7 @@ server.express.post(
     const password = req.body.password
 
     const user = await User.findOne({ where: { email } })
-    if (!user || (await bcrypt.compare(password, user.password))) {
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       res.status(403).send('Forbidden')
       return
     }
@@ -87,22 +91,162 @@ server.express.post(
   asyncRoute(async (req, res) => {
     console.log('POST /auth/signup')
 
-    const { name, email, password, country } = req.body
-    await User.insert({ name, email, password, country })
-    res.status(200).send('Success!')
+    const { name, email, password } = req.body
+    const user = await User.findOne({ where: { email } })
+    if (user) {
+      console.log('Already found user in the database!')
+      return res.sendStatus(400)
+    }
+    await User.insert({ name, email, password })
+    console.log('Inserted user into database!')
+    return res.status(200).send('Success!')
   })
 )
+
 /*
+function existAccount(user : User, country : string){
+  for (let i = 0; i < user.account.length; i++) {
+    if (user.account[i].country == country) {
+        //have account
+        return i
+    }
+  }
+  return -1
+}
+*/
+
+async function executeExchange(currentRate : number, requesterUser: User, userAccount: Account, userToAccount: Account, exReqData : exReq) {
+  //store this request into ExchangeRequest table
+  const requestId = await ExchangeRequest.createQueryBuilder().insert().into(ExchangeRequest).values( { amountWant: exReqData.amountWant, amountPay: exReqData.amountPay, bidRate: exReqData.bidRate
+                    , currentRate: currentRate, fromCurrency: exReqData.fromCurrency, toCurrency: exReqData.toCurrency, user: requesterUser } ).returning("requestId").execute()
+  //get the request
+  let thisRequest = await ExchangeRequest.findOne( { where : { requestId : requestId } } )
+  const match = await checkForMatch(exReqData)
+
+  if (match[0]) {
+    //there is a match
+    //update requester account
+    userAccount.balance = userAccount.balance - exReqData.amountPay
+    let userToAccount = await Account.createQueryBuilder("account")
+                                     .leftJoinAndSelect("account.user", "user")
+                                    .where("user.id = :uId" , { uId : exReqData.userId } )
+                                    .andWhere("country = :toCurrency", { toCurrency : exReqData.toCurrency } )
+                                    .getOne()
+    if (userToAccount){
+      userToAccount.balance = userToAccount.balance + exReqData.amountWant
+    }
+    else {
+      //no userToAccount, create a new account to store desire money
+      const accountId = Account.createQueryBuilder().insert().into(Account).values({ country: exReqData.toCurrency, type: 'interal', balance: exReqData.amountWant, user: requesterUser}).returning('accountId').execute()
+      const newAccount = await Account.findOne({ where : {accountId : accountId  } })
+      if (newAccount) {
+        requesterUser.account.push(newAccount) //successfuly created the account
+      }
+    }
+    //update the second user's accounts
+    let exReq2 = await ExchangeRequest.findOne({ where : { requestId : match[0] } })
+    if (exReq2) {
+      let secondUser = await User.createQueryBuilder("user")
+                                 .leftJoinAndSelect("user.exchangeRequest", "exchangeRequest")
+                                 .where(" exchangeRequest.id = :exId ", { exId : match[0] } )
+                                 .getOne()
+      let secondUserFromAccount = await Account.createQueryBuilder("account")
+                                               .leftJoinAndSelect("account.user", "user")
+                                               .where(" user.id = : uId" , { uId : secondUser?.id } )
+                                               .andWhere(" country = : fromCountry ", { fromCountry : exReq2.fromCurrency })
+                                               .getOne()
+      if (secondUserFromAccount) {
+        secondUserFromAccount.balance = secondUserFromAccount.balance - exReq2.amountPay
+      }
+      let secondUserToAccount = await Account.createQueryBuilder("account")
+                                             .leftJoinAndSelect("account.user", "user")
+                                             .where(" user.id = : uId" , { uId : secondUser?.id } )
+                                             .andWhere(" country = : toCountry ", { toCountry : exReq2.toCurrency } )
+                                             .getOne()
+      if (secondUserToAccount) {
+        secondUserToAccount.balance = secondUserToAccount.balance + exReq2.amountWant
+      }
+      //store transaction in transaction history
+      Transaction.createQueryBuilder().insert().into(Transaction).values({
+              requestId1 : thisRequest?.requestId,
+              requestId2 : exReq2.requestId,
+              profit: match[1]
+            }).execute()
+    }
+  }
+}
+
 server.express.post(
 '/confirm-request',
 asyncRoute(async (req, res) => {
   //handle request
-  //verify if have enough money
-  //yes, substract money, generate ID for the request, and store request in DB.
-  //no, route to a not enough page
+    console.log('POST /confirm-request')
+    const {amountWant, amountPay, bidRate, currentRate, fromCurrency, toCurrency} = req.body
+    console.log(currentRate)
+    const authToken = req.cookies.authToken
+    if (authToken) {
+      const session = await Session.findOne({ where: { authToken }, relations: ['user'] })
+      if (session) {
+        const exReqData = new exReq(session.user.id, bidRate, amountPay, amountWant,fromCurrency,toCurrency)
+        //get requester info
+        let requesterUser = await User.findOne({ where : { id : exReqData.userId } })
+        if (requesterUser){
+          //get requester account
+          let userAccount = await Account.createQueryBuilder("account")
+                                        .leftJoinAndSelect("account.user", "user")
+                                        .where("user.id = :uId ", { uId : requesterUser.id })
+                                        .andWhere("country = :fromCurrency", { fromCurrency : exReqData.fromCurrency })
+                                        .getOne()
 
+          if (userAccount){
+            if (userAccount.balance - exReqData.amountPay >=0){
+              //check if userToAccount exists
+              let userToAccount = await Account.createQueryBuilder("account")
+                                               .leftJoinAndSelect("account.user", "user")
+                                               .where("user.id = :uId" , { uId : exReqData.userId } )
+                                               .andWhere("country = :toCurrency", { toCurrency : exReqData.toCurrency } )
+                                               .getOne()
+              if (userToAccount){
+                executeExchange(currentRate, requesterUser, userAccount, userToAccount, exReqData)
+              }
+              else {
+                //no userToAccount, create a new account to store desire money
+                const accountId = Account.createQueryBuilder().insert().into(Account).values({ country: exReqData.toCurrency, type: 'interal', balance: exReqData.amountWant, user: requesterUser}).returning('accountId').execute()
+                const newAccount = await Account.findOne({ where : {accountId : accountId  } })
+                if (newAccount) {
+                  requesterUser.account.push(newAccount) //successfuly created the account
+                  executeExchange(currentRate, requesterUser, userAccount, newAccount, exReqData)
+                }
+              }
+              //successful request stored
+              res.status(200).send("Success")
+            }
+            else{
+              //respone not enough money
+              res.status(200).send("Not Enough Money")
+            }
+          }
+          else{
+            //response user does not have the account in that currency
+            res.status(200).send("No Account")
+          }
+        }
+        else {
+          //error user not found, send message to client not found
+          res.redirect('/app/login')
+        }
+      }
+      else {
+        // session not found
+        res.redirect('/app/login')
+      }
+    }
+    else {
+    // user need to login
+      res.redirect('/app/login')
+    }
 })
-) */
+)
 
 server.express.post(
   '/auth/logout',

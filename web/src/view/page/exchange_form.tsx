@@ -1,13 +1,16 @@
 import { RouteComponentProps } from '@reach/router';
 import * as React from 'react';
 import { useState } from 'react';
+import { check } from '../../../../common/src/util';
 import { Button } from '../../style/button';
 import { H1 } from '../../style/header';
 import { Input } from '../../style/input';
 import { Spacer } from '../../style/spacer';
 import { AppRouteParams } from '../nav/route';
+import { toastErr } from '../toast/toast';
 import { Page } from './Page';
 
+//import { UserContext } from '../auth/user'
 interface ExchangeFormProps extends RouteComponentProps, AppRouteParams {}
 
 export function ExchangeForm(props: ExchangeFormProps) {
@@ -16,6 +19,11 @@ export function ExchangeForm(props: ExchangeFormProps) {
       <Exchange />
     </Page>
   )
+}
+
+const divStyle = {
+  display: 'flex',
+  alignItems: 'center'
 }
 
 //import { UserContext } from './user
@@ -31,7 +39,8 @@ function Exchange() {
   const [bidStr, setBidStr] = useState('')
   const [amountPay, setAmountPay] = useState(0)
   const [disPlayValue, setDisplayValue] = useState(0)
-
+  const [currentRate] = useState(1.32)
+  const [displayFetch, setDisplayFetch] = useState('')
 
   function handleSubmit () {
     let value = (1/Number(bidStr)) * Number(wantStr);
@@ -47,8 +56,24 @@ function Exchange() {
     setDisplayValue(value);
   }
 
+ async function submitRequest() {
+    fetch('/confirm-request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({amountPay, amountWant, bidRate, currentRate, fromCurrency, toCurrency }),
+    })
+      .then(res => {
+        check(res.ok, 'response status ' + res.status)
+        res.text().then(tx => { if ( tx == 'Success') { setDisplayFetch(tx)} else{ toastErr(tx) } })
+      })
+      .catch(err => {
+        toastErr(err.toString())
+      })
+  }
+
   return (
     <>
+    <div style={divStyle}>
       <div className="mt3">
         <label className="db fw4 lh-copy f6" htmlFor="fromCurrency">
           From currency:
@@ -85,6 +110,7 @@ function Exchange() {
           <option value="CNY">CNY</option>
         </select>
       </div>
+      </div>
       <div className="mt3">
         <label className="db fw4 lh-copy f6" htmlFor="amountWant">
           Foreign Currency: $
@@ -103,6 +129,12 @@ function Exchange() {
       <Spacer />
       <div>
         <H1> Total balance: ${disPlayValue} </H1>
+      </div>
+      <div className="mt3">
+          <Button onClick={submitRequest}> Confirm Request </Button>
+      </div>
+      <div className="mt3">
+          <H1> ${displayFetch} </H1>
       </div>
     </>
   )

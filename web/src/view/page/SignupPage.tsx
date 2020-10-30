@@ -1,11 +1,11 @@
-import { RouteComponentProps } from '@reach/router'
+import { navigate, RouteComponentProps } from '@reach/router'
 import * as bcrypt from 'bcryptjs'
 import * as React from 'react'
 import { check } from '../../../../common/src/util'
 import { Button } from '../../style/button'
 import { Input } from '../../style/input'
 import { Spacer } from '../../style/spacer'
-import { AppRouteParams } from '../nav/route'
+import { AppRouteParams, getPath, Route } from '../nav/route'
 import { toastErr } from '../toast/toast'
 import { Page } from './Page'
 
@@ -22,8 +22,8 @@ export function SignupPage(props: SignupPageProps) {
 function Signup() {
   const [email, setEmail] = React.useState('')
   const [name, setName] = React.useState('')
-  const [country, setCountry] = React.useState('')
   const [password, setPassword] = React.useState('')
+  const [passwordConfirmation, setPasswordConfirmation] = React.useState('')
   const [err, setError] = React.useState({ email: false, password: false })
 
   // reset error when email/password change
@@ -32,7 +32,7 @@ function Signup() {
   React.useEffect(() => setError({ ...err, password: false }), [name])
 
   async function signup() {
-    if (!validateForm(email, password, setError)) {
+    if (!validateForm(email, password, passwordConfirmation, setError)) {
       return
     }
 
@@ -41,19 +41,17 @@ function Signup() {
       if (err) {
         console.log("Couldn't hash the password!")
       } else {
-        console.log(JSON.stringify({ name, email, password: hashedPassword, country }))
         fetch('/auth/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email, password: hashedPassword, country }),
+          body: JSON.stringify({ name, email, password: hashedPassword }),
         })
           .then(res => {
-            check(res.ok, 'response status ' + res.status)
-            console.log('successfully created user')
-            return res.text()
+            check(res.ok)
+            navigate(getPath(Route.LOGIN))
           })
-          .catch(() => {
-            console.log('request failed')
+          .catch(err => {
+            toastErr('An account is already associated with this user!')
           })
       }
     })
@@ -63,7 +61,7 @@ function Signup() {
     <>
       <div className="mt3">
         <label className="db fw4 lh-copy f6" htmlFor="name">
-          Name
+          Full name
         </label>
         <Input $onChange={setName} name="Full name" type="name" />
       </div>
@@ -79,22 +77,16 @@ function Signup() {
         </label>
         <Input $hasError={err.password} $onChange={setPassword} name="password" type="password" />
       </div>
-      <Spacer $h5 />
-      <div>
-        <label className="db fw4 lh-copy f6" htmlFor="countries">
-          Country
+      <div className="mt3">
+        <label className="db fw4 lh-copy f6" htmlFor="password-confirmation">
+          Confirm password
         </label>
-        <select
-          value={country}
-          onChange={event => {
-            setCountry(event.target.value)
-          }}
-        >
-          <option value="United States">United States</option>
-          <option value="Canada">Canada</option>
-          <option value="Japan">Japan</option>
-          <option value="Brazil">Brazil</option>
-        </select>
+        <Input
+          $hasError={err.password}
+          $onChange={setPasswordConfirmation}
+          name="password-confirmation"
+          type="password"
+        />
       </div>
       <Spacer $h5 />
       <div className="mt3">
@@ -112,6 +104,7 @@ async function validateEmail(email: string) {
 function validateForm(
   email: string,
   password: string,
+  passwordConfirmation: string,
   setError: React.Dispatch<React.SetStateAction<{ email: boolean; password: boolean }>>
 ) {
   const validEmail = validateEmail(email)
@@ -124,7 +117,11 @@ function validateForm(
     toastErr('Password must be at least 8 characters long!')
   }
 
+  const isPasswordConsistent = Boolean(passwordConfirmation) && password === passwordConfirmation
+  if (!isPasswordConsistent) {
+    toastErr('Passwords must match!')
+  }
+
   setError({ email: !validEmail, password: !validPassword })
-  console.log('valid', validEmail, validPassword)
-  return validEmail && validPassword
+  return validEmail && validPassword && isPasswordConsistent
 }

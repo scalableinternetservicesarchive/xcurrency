@@ -1,18 +1,17 @@
+import { navigate } from '@reach/router'
 import * as React from 'react'
-import { useContext, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { check } from '../../../../common/src/util'
 import { Button } from '../../style/button'
 import { Input } from '../../style/input'
 import { Spacer } from '../../style/spacer'
-import { handleError } from '../toast/error'
+import { getPath, Route } from '../nav/route'
 import { toastErr } from '../toast/toast'
-import { UserContext } from './user'
 
 export function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [err, setError] = useState({ email: false, password: false })
-  const { user } = useContext(UserContext)
 
   // reset error when email/password change
   useEffect(() => setError({ ...err, email: !validateEmail(email) }), [email])
@@ -20,7 +19,7 @@ export function Login() {
 
   function login() {
     if (!validate(email, password, setError)) {
-      toastErr('invalid email/password')
+      toastErr('Please enter a valid email or password!')
       return
     }
     fetch('/auth/login', {
@@ -29,18 +28,13 @@ export function Login() {
       body: JSON.stringify({ email, password }),
     })
       .then(res => {
-        check(res.ok, 'response status ' + res.status)
-        return res.text()
+        check(res.status == 200)
+        navigate(getPath(Route.PROFILE))
       })
-      .then(() => window.location.reload())
       .catch(err => {
-        toastErr(err.toString())
+        toastErr("The email or password you've entered is incorrect!")
         setError({ email: true, password: true })
       })
-  }
-
-  if (user) {
-    return <Logout />
   }
 
   return (
@@ -51,36 +45,17 @@ export function Login() {
         </label>
         <Input $hasError={err.email} $onChange={setEmail} $onSubmit={login} name="email" type="email" />
       </div>
+      <Spacer $h1 />
       <div className="mt3">
         <label className="db fw4 lh-copy f6" htmlFor="password">
           Password
         </label>
         <Input $hasError={err.password} $onChange={setPassword} $onSubmit={login} name="password" type="password" />
       </div>
+      <Spacer $h5 />
       <div className="mt3">
         <Button onClick={login}>Login</Button>
       </div>
-    </>
-  )
-}
-
-function Logout() {
-  function logout() {
-    return fetch('/auth/logout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    })
-      .then(res => {
-        check(res.ok, 'response status ' + res.status)
-        window.location.reload()
-      })
-      .catch(handleError)
-  }
-
-  return (
-    <>
-      <Spacer $h5 />
-      <Button onClick={logout}>Logout</Button>
     </>
   )
 }
@@ -97,7 +72,6 @@ function validate(
 ) {
   const validEmail = validateEmail(email)
   const validPassword = Boolean(password)
-  console.log('valid', validEmail, validPassword)
   setError({ email: !validEmail, password: !validPassword })
   return validEmail && validPassword
 }
