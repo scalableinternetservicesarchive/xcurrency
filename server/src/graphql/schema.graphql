@@ -125,3 +125,11 @@ input ExchangeRequestInput {
   fromCurrency: String!
   toCurrency: String!
 }
+
+type Account {
+  id: Int!
+  country: String!
+  type: String!
+  balance: Float!
+  user: User!
+}

@@ -1,13 +1,11 @@
 import { RouteComponentProps } from '@reach/router';
 import * as React from 'react';
 import { useState } from 'react';
-import { check } from '../../../../common/src/util';
 import { Button } from '../../style/button';
 import { H1 } from '../../style/header';
 import { Input } from '../../style/input';
 import { Spacer } from '../../style/spacer';
 import { AppRouteParams } from '../nav/route';
-import { toastErr } from '../toast/toast';
 import { Page } from './Page';
 
 //import { UserContext } from '../auth/user'
@@ -57,6 +55,7 @@ function Exchange() {
   }
 
  async function submitRequest() {
+   /*
     fetch('/confirm-request', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -69,6 +68,10 @@ function Exchange() {
       .catch(err => {
         toastErr(err.toString())
       })
+      */
+     fetch('/test-exchange')
+     console.log(currentRate)
+     setDisplayFetch('10')
   }
 
   return (

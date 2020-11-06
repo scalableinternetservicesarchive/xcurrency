@@ -10,16 +10,16 @@ export class ExchangeRequest extends BaseEntity implements GraphqlExReq {
     @CreateDateColumn()
     timeCreated: Date
 
-    @Column()
+    @Column("decimal", { precision: 10, scale : 2})
     amountWant: number
 
-    @Column()
+    @Column("decimal", { precision: 10, scale : 2})
     amountPay: number
 
-    @Column()
+    @Column("decimal", { precision: 5, scale : 2})
     bidRate: number
 
-    @Column()
+    @Column("decimal", { precision: 5, scale : 2})
     currentRate: number
 
     @Column({

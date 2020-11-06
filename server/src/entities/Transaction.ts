@@ -14,6 +14,6 @@ export class Transaction extends BaseEntity {
     @Column()
     requestId2: number
 
-    @Column()
+    @Column("decimal", { precision: 10, scale : 2})
     profit: number
 }

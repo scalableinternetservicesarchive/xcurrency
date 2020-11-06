@@ -1,6 +1,6 @@
 import { BaseEntity, Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
-import { Account as GraphqlUser, User } from '../graphql/schema.types'
-
+import { Account as GraphqlUser } from '../graphql/schema.types'
+import { User } from './User'
 
 @Entity()
 export class Account extends BaseEntity implements GraphqlUser {
@@ -20,7 +20,7 @@ export class Account extends BaseEntity implements GraphqlUser {
 
   type: string
 
-  @Column()
+  @Column("decimal", { precision: 10, scale : 2})
   balance: number
 
   @ManyToOne(()=> User, user => user.account)
