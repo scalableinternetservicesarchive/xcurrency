@@ -14,6 +14,7 @@ export function Logout() {
       .then(res => {
         check(res.ok, 'response status ' + res.status)
         navigate(getPath(Route.LOGIN))
+        window.location.reload()
       })
       .catch(handleError)
   }

@@ -20,10 +20,8 @@ export function NavBar() {
   // const location = useLocation()
   const isSmall = useMediaQuery(breakpoints.small)
   // const [showMenu, setShowMenu] = React.useState(false)
-  // const [user, setUser] = React.useState(false)
   const [toast, setToast] = React.useState<Toast | null>(null)
-
-  const user = useContext(UserContext)
+  let isUserLoggedIn = useContext(UserContext).isLoggedIn()
 
   function onToast(feedback: Toast) {
     setToast(feedback)
@@ -58,9 +56,9 @@ export function NavBar() {
           {/* {tabs.map((tab, i) => (
             <NavItem key={i} {...tab} />
           ))} */}
-          {user.isLoggedIn() && <Logout />}
-          {!user.isLoggedIn() && <NavItem name="Log In" path={getPath(Route.LOGIN)} />}
-          {!user.isLoggedIn() && <NavItem name="Sign Up" path={getPath(Route.SIGNUP)} />}
+          {isUserLoggedIn && <Logout />}
+          {!isUserLoggedIn && <NavItem name="Log In" path={getPath(Route.LOGIN)} />}
+          {!isUserLoggedIn && <NavItem name="Sign Up" path={getPath(Route.SIGNUP)} />}
 
           {/* {isSmall && <NavMenu show={showMenu} onClick={() => setShowMenu(!showMenu)} />} */}
         </Nav>

@@ -30,6 +30,7 @@ export function Login() {
       .then(res => {
         check(res.status == 200)
         navigate(getPath(Route.PROFILE))
+        window.location.reload()
       })
       .catch(err => {
         toastErr("The email or password you've entered is incorrect!")
