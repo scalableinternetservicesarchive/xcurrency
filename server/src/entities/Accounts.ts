@@ -1,10 +1,19 @@
-import { BaseEntity, Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
-import { Account as GraphqlUser, UserType } from '../graphql/schema.types'
+import {
+  BaseEntity,
+  Column,
+  CreateDateColumn,
+  Entity,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm'
+//import { Account as GraphqlAccount } from '../graphql/schema.types'
+import { User } from './User'
 
 @Entity()
-export class Account extends BaseEntity implements GraphqlUser {
+export class Account extends BaseEntity /*implements GraphqlAccount*/ {
   @PrimaryGeneratedColumn()
-  id: number
+  accountId: number
 
   @CreateDateColumn()
   timeCreated: Date
@@ -12,18 +21,16 @@ export class Account extends BaseEntity implements GraphqlUser {
   @UpdateDateColumn()
   timeUpdated: Date
 
-  @Column()
-  accountID: number
-
-  @Column()
-  userID: number
-
   @Column({
     length: 100,
   })
-  balance: string
-
   country: string
 
   type: string
+
+  @Column()
+  balance: number
+
+  @ManyToOne(() => User, user => user.account)
+  user: User
 }

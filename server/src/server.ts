@@ -93,7 +93,8 @@ server.express.post(
       console.log('Already found user in the database!')
       return res.sendStatus(400)
     }
-    await User.insert({ name, email, password })
+    const result = await User.insert({ name, email, password })
+    console.log(result.identifiers[0]);
     console.log('Inserted user into database!')
     return res.status(200).send('Success!')
   })

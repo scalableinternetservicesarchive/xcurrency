@@ -1,5 +1,6 @@
-import { BaseEntity, Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm'
+import { BaseEntity, Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
 import { ExchangeRequest as GraphqlExReq } from '../graphql/schema.types'
+import { User } from './User'
 
 @Entity()
 export class ExchangeRequest extends BaseEntity implements GraphqlExReq {
@@ -30,4 +31,7 @@ export class ExchangeRequest extends BaseEntity implements GraphqlExReq {
       length: 10,
     })
     toCurrency: string
+
+    @ManyToOne(()=>User, user => user.exchangeRequest)
+    user: User
 }
