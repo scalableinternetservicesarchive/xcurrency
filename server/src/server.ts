@@ -104,7 +104,7 @@ asyncRoute(async (req, res) => {
 })
 ) */
 
-*/
+/*
 server.express.get('/requests',async (req,res) => {
 	const requests = await Requests.find()
 	res.status(200).type('json').send(requests)
