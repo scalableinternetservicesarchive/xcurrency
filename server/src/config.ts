@@ -22,6 +22,8 @@ export const Config = {
   appserverTag: process.env.APPSERVER_TAG || 'local',
   honeyKey: process.env.HONEYCOMB_KEY || 'd29d5f5ec24178320dae437383480737',
   honeyDatasets: (process.env.HONEYCOMB_DATASETS || 'op').split(',').map(d => (isProd() ? d : 'dev-' + d)),
+  plaidClientKey: process.env.PLAID_CLIENT_KEY || '5f92801b3cd69a001204999a',
+  plaidSandboxKey: process.env.PLAID_SANDBOX_KEY || 'e48ecaf259feb09f0c4bed217c5ddc',
   backgroundService: isServiceEnabled(AppService.BACKGROUND) ? true : !isProd(),
   wsUrl: process.env.WS_URL || 'ws://localhost:3000/graphqlsubscription',
   adminPassword: process.env.ADMIN_PASSWORD || 'password',

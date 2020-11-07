@@ -49,7 +49,6 @@ function Signup() {
           .then(res => {
             check(res.ok)
             navigate(getPath(Route.LOGIN))
-            window.location.reload()
           })
           .catch(err => {
             toastErr('An account is already associated with this user!')

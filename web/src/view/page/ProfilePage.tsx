@@ -6,11 +6,28 @@ import { Spacer } from '../../style/spacer'
 import { style } from '../../style/styled'
 import { BodyText, IntroText } from '../../style/text'
 import { AppRouteParams } from '../nav/route'
+import { toastErr } from '../toast/toast'
 import { Page } from './Page'
+import { PlaidButton } from './PlaidButton'
 
 interface ProfilePageProps extends RouteComponentProps, AppRouteParams {}
 
 export function ProfilePage(props: ProfilePageProps) {
+  const [linkToken, setLinkToken] = React.useState('')
+  if (!linkToken) {
+    fetch('/getPlaidLinkToken', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    })
+      .then(async (res: any) => {
+        setLinkToken((await res.json()).link_token)
+      })
+      .catch(err => {
+        console.log(err)
+        toastErr('Could not retrieve Plaid link token!')
+      })
+  }
+
   return (
     <Page>
       <Section>
@@ -20,53 +37,33 @@ export function ProfilePage(props: ProfilePageProps) {
         <Spacer $h4 />
         <Table>
           <tbody>
-            <Name
-              header="Name"
-              name="Joe Bruin"
-            />
-            <Id
-              header="ID Number"
-              id="1111"
-            />
+            <Name header="Name" name="Joe Bruin" />
+            <Id header="ID Number" id="1111" />
           </tbody>
         </Table>
         <Spacer $h4 />
         <IntroText>Accounts Information</IntroText>
         <Table>
           <tbody>
-            <Account
-              country="Country"
-              balance="Balance"
-            />
-            <Account
-              country="USA"
-              balance="$30"
-            />
-            <Account
-              country="UK"
-              balance="€30"
-            />
+            <Account country="Country" balance="Balance" />
+            <Account country="USA" balance="$30" />
+            <Account country="UK" balance="€30" />
           </tbody>
         </Table>
         <Spacer $h4 />
         <IntroText>Other Balances Information</IntroText>
         <Table>
           <tbody>
-            <Transfer
-              country="USA"
-              amount="blah"
-            />
+            <Transfer country="USA" amount="blah" />
           </tbody>
         </Table>
       </Section>
+      <PlaidButton link_token={linkToken} />
     </Page>
   )
 }
 
-function Name(props: {
-  header: string
-  name: string
-}) {
+function Name(props: { header: string; name: string }) {
   return (
     <TR>
       <BodyText>
@@ -77,10 +74,7 @@ function Name(props: {
   )
 }
 
-function Id(props: {
-  header: string
-  id: string
-}) {
+function Id(props: { header: string; id: string }) {
   return (
     <TR>
       <BodyText>
@@ -91,10 +85,7 @@ function Id(props: {
   )
 }
 
-function Account(props: {
-  country: string
-  balance: string
-}) {
+function Account(props: { country: string; balance: string }) {
   return (
     <TR>
       <BodyText>
@@ -105,10 +96,7 @@ function Account(props: {
   )
 }
 
-function Transfer(props: {
-  country: string
-  amount: string
-}) {
+function Transfer(props: { country: string; amount: string }) {
   return (
     <TR>
       <BodyText>

@@ -28,6 +28,14 @@ import { ConnectionManager } from './graphql/ConnectionManager'
 import { expressLambdaProxy } from './lambda/handler'
 import { renderApp } from './render'
 
+const plaid = require('plaid')
+
+const plaidClient = new plaid.Client({
+  clientID: Config.plaidClientKey,
+  secret: Config.plaidSandboxKey,
+  env: plaid.environments.sandbox,
+})
+
 const server = new GraphQLServer({
   typeDefs: getSchema(),
   resolvers: graphqlRoot as any,
@@ -93,8 +101,7 @@ server.express.post(
       console.log('Already found user in the database!')
       return res.sendStatus(400)
     }
-    const result = await User.insert({ name, email, password })
-    console.log(result.identifiers[0]);
+    await User.insert({ name, email, password })
     console.log('Inserted user into database!')
     return res.status(200).send('Success!')
   })
@@ -260,6 +267,58 @@ server.express.post(
     next()
   })
 )
+
+server.express.post('/getPlaidLinkToken', async (req: any, res) => {
+  const authToken = req.cookies.authToken || req.header('x-authtoken')
+  if (authToken) {
+    const session = await Session.findOne({ where: { authToken }, relations: ['user'] })
+    if (session) {
+      const clientUserId = session.user.id
+      try {
+        const tokenResponse = await plaidClient.createLinkToken({
+          user: {
+            client_user_id: String(clientUserId),
+          },
+          client_name: 'XCurrency',
+          products: ['auth'],
+          country_codes: ['US'],
+          language: 'en',
+          webhook: 'https://webhook.sample.com',
+        })
+        return res.send({ link_token: tokenResponse.link_token })
+      } catch (e) {
+        return res.send({ error: e.message })
+      }
+    } else {
+      return res.send({ error: 'No session associated with the logged in user could be found!' })
+    }
+  } else {
+    return res.send({ error: 'No authentication cookie could be found! Please try logging in.' })
+  }
+})
+
+server.express.post('/getPlaidAccessToken', async (req, res) => {
+  try {
+    const publicToken = req.body.public_token
+    // Exchange the client-side public_token for a server access_token
+    const tokenResponse = await plaidClient.exchangePublicToken(publicToken)
+    // Save the access_token and item_id to a persistent database
+    const accessToken = tokenResponse.access_token
+
+    const authToken = req.cookies.authToken || req.header('x-authtoken')
+    if (authToken) {
+      const session = await Session.findOne({ where: { authToken }, relations: ['user'] })
+      if (session) {
+        const user = session.user
+        user.plaidAccessToken = accessToken
+        await user.save()
+      }
+    }
+  } catch (e) {
+    return res.send({ error: e.message })
+  }
+  return res.sendStatus(200)
+})
 
 initORM()
   .then(() => migrate())
