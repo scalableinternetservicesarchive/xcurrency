@@ -2,6 +2,7 @@ import { BaseEntity, Column, CreateDateColumn, Entity, OneToMany, PrimaryGenerat
 import { User as GraphqlUser, UserType } from '../graphql/schema.types'
 import { Account } from './Accounts'
 import { ExchangeRequest } from './ExchangeRequest'
+import { TransactionRecord } from './TransactionRecord'
 
 @Entity()
 export class User extends BaseEntity implements GraphqlUser {
@@ -45,4 +46,6 @@ export class User extends BaseEntity implements GraphqlUser {
   @OneToMany(()=> Account, account => account.user)
   account: Account[];
 
+  @OneToMany(()=> TransactionRecord, transactionRecord => transactionRecord.user)
+  transactionRecord: TransactionRecord[]
 }

@@ -24,7 +24,7 @@ import { initORM } from './db/sql'
 import { Account } from './entities/Accounts'
 import { ExchangeRequest } from './entities/ExchangeRequest'
 import { Session } from './entities/Session'
-import { Transaction } from './entities/Transaction'
+import { TransactionRecord } from './entities/TransactionRecord'
 import { User } from './entities/User'
 import { checkForMatch, exReq } from './exchangeAlgorithm'
 import { getSchema, graphqlRoot, pubsub } from './graphql/api'
@@ -161,7 +161,7 @@ async function executeExchange(currentRate : number, requesterUser: User, userAc
         await Account.save(secondUserToAccount)
       }
       //store transaction in transaction history
-      Transaction.insert({
+      TransactionRecord.insert({
               requestId1 : thisRequest?.requestId,
               requestId2 : exReq2.requestId,
               profit: match[1]
@@ -286,7 +286,7 @@ server.express.get('/test-exchange', asyncRoute(async (req, res) => {
               secondUserToAccount.balance = secondUserToAccount.balance + exReq2.amountWant
             }
             //store transaction in transaction history
-            Transaction.createQueryBuilder().insert().into(Transaction).values({
+            TransactionRecord.createQueryBuilder().insert().into(TransactionRecord).values({
                     requestId1 : request1?.requestId,
                     requestId2 : exReq2.requestId,
                     profit: match[1]
