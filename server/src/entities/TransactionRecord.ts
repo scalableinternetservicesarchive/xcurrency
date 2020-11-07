@@ -1,13 +1,15 @@
-import { BaseEntity, Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
-import { User } from './User'
+import { BaseEntity, Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm'
 
 @Entity()
 export class TransactionRecord extends BaseEntity {
     @PrimaryGeneratedColumn()
     transacId: number
 
-    @ManyToOne(()=>User, user => user.transactionRecord)
-    user: User
+    @Column()
+    user1: number
+
+    @Column()
+    user2: number
 
     @CreateDateColumn()
     timeCreated: Date
