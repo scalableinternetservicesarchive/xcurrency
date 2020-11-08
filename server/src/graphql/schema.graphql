@@ -19,26 +19,27 @@ type Query {
   self: User
 
   surveys: [Survey!]!
-  survey (surveyId: Int!): Survey
+  accounts: [Account]!
+
+  survey(surveyId: Int!): Survey
 
   #exchangeReqest (requestID: Int!): ExchangeRequest
   #exchangeRequests: [ExchangeRequest!]!
-
 }
 
 type Mutation {
   # Records an answer to a survey question presented in class.
-  answerSurvey (input: SurveyInput!): Boolean!
+  answerSurvey(input: SurveyInput!): Boolean!
 
   # Moves the survey to the next question (or starts it if it hasn't started). ADMIN only.
-  nextSurveyQuestion (surveyId: Int!): Survey
+  nextSurveyQuestion(surveyId: Int!): Survey
 
   #Records an request to a database
-  recordRequest (input: ExchangeRequestInput!): Boolean!
+  recordRequest(input: ExchangeRequestInput!): Boolean!
 }
 
 type Subscription {
-  surveyUpdates (surveyId: Int!): Survey
+  surveyUpdates(surveyId: Int!): Survey
 }
 
 type User {
@@ -46,6 +47,15 @@ type User {
   userType: UserType!
   email: String!
   name: String!
+}
+
+type Account {
+  accountId: Int!
+  country: String!
+  type: AccountType!
+  balance: Float!
+  name: String
+  user: User!
 }
 
 #might need ID for each user later.
@@ -68,7 +78,10 @@ type ExchangeRequest {
 #  History: [Transaction]!
 #}
 
-enum UserType { ADMIN, USER }
+enum UserType {
+  ADMIN
+  USER
+}
 
 type Survey {
   id: Int!
@@ -124,4 +137,9 @@ input ExchangeRequestInput {
   currentRate: Float!
   fromCurrency: String!
   toCurrency: String!
+}
+
+enum AccountType {
+  INTERNAL
+  EXTERNAL
 }

@@ -7,7 +7,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm'
-//import { Account as GraphqlAccount } from '../graphql/schema.types'
+import { AccountType } from '../graphql/schema.types'
 import { User } from './User'
 
 @Entity()
@@ -26,7 +26,11 @@ export class Account extends BaseEntity /*implements GraphqlAccount*/ {
   })
   country: string
 
-  type: string
+  @Column({
+    type: 'enum',
+    enum: AccountType,
+  })
+  type: AccountType
 
   @Column()
   balance: number
