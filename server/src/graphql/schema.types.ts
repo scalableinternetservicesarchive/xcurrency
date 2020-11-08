@@ -117,6 +117,11 @@ export enum UserType {
   User = 'USER',
 }
 
+export enum AccountType {
+  Internal = 'INTERNAL',
+  External = 'EXTERNAL',
+}
+
 export type ResolverTypeWrapper<T> = Promise<T> | T
 
 export type LegacyStitchingResolver<TResult, TParent, TContext, TArgs> = {
@@ -309,7 +314,7 @@ export type SurveyAnswerResolvers<
 export type ExchangeRequestResolver<
   ContextType = any,
   ParentType extends ResolversParentTypes['ExchangeRequest'] = ResolversParentTypes['ExchangeRequest']
-  > = {
+> = {
   requestId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>
   amountWant?: Resolver<ResolversTypes['Float'], ParentType, ContextType>
   bidRate?: Resolver<ResolversTypes['Float'], ParentType, ContextType>

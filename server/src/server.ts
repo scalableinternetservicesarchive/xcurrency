@@ -20,11 +20,13 @@ import { v4 as uuidv4 } from 'uuid'
 import { checkEqual, Unpromise } from '../../common/src/util'
 import { Config } from './config'
 import { migrate } from './db/migrate'
-import { initORM } from './db/sql'
+import { initORM, query } from './db/sql'
+import { Account } from './entities/Accounts'
 import { Session } from './entities/Session'
 import { User } from './entities/User'
 import { getSchema, graphqlRoot, pubsub } from './graphql/api'
 import { ConnectionManager } from './graphql/ConnectionManager'
+import { AccountType } from './graphql/schema.types'
 import { expressLambdaProxy } from './lambda/handler'
 import { renderApp } from './render'
 
@@ -309,9 +311,48 @@ server.express.post('/getPlaidAccessToken', async (req, res) => {
     if (authToken) {
       const session = await Session.findOne({ where: { authToken }, relations: ['user'] })
       if (session) {
+        // save the access token for future use
         const user = session.user
         user.plaidAccessToken = accessToken
         await user.save()
+
+        // retrieve balances of all accounts
+        const { accounts } = await plaidClient.getAccounts(accessToken)
+
+        for (const account of accounts) {
+          if (account.subtype === 'savings' || account.subtype == 'checking') {
+            const existingExternalAccount = await Account.findOne({
+              where: { name: account.name, user: user, type: AccountType.External },
+            })
+            if (!existingExternalAccount) {
+              // Create the external account
+              let { current: balance, iso_currency_code } = account.balances
+              await Account.insert({
+                name: account.name,
+                country: iso_currency_code,
+                balance,
+                user,
+                type: AccountType.External,
+              })
+
+              // Create the internal account if needed
+              const existingInternalAccount = await query(
+                `SELECT accountId FROM account
+                WHERE account.userId = ${user.id} and
+                account.country = '${iso_currency_code}' and
+                account.type = '${AccountType.Internal}'`
+              )
+              if (existingInternalAccount.length == 0) {
+                await Account.insert({
+                  country: iso_currency_code,
+                  balance: 0,
+                  user,
+                  type: AccountType.Internal,
+                })
+              }
+            }
+          }
+        }
       }
     }
   } catch (e) {
