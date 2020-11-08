@@ -31,8 +31,8 @@ function Exchange() {
   const [amountWant, setAmountWant] = useState(0)
   const [bidRate, setBidRate] = useState(0)
   //const [currentRate, setCurrentRate] = useState(0)
-  const [fromCurrency, setfromCurrency] = useState('')
-  const [toCurrency, setToCurrency] = useState('')
+  const [fromCurrency, setfromCurrency] = useState('USD')
+  const [toCurrency, setToCurrency] = useState('CAD')
   const [wantStr, setWantStr] = useState('')
   const [bidStr, setBidStr] = useState('')
   const [amountPay, setAmountPay] = useState(0)
@@ -55,24 +55,32 @@ function Exchange() {
   }
 
  async function submitRequest() {
-   /*
-    fetch('/confirm-request', {
+   const dataJson = {amountPay, amountWant, bidRate, currentRate, fromCurrency, toCurrency };
+    await fetch('/confirm-request', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({amountPay, amountWant, bidRate, currentRate, fromCurrency, toCurrency }),
+      body: JSON.stringify(dataJson),
     })
-      .then(res => {
-        check(res.ok, 'response status ' + res.status)
-        res.text().then(tx => { if ( tx == 'Success') { setDisplayFetch(tx)} else{ toastErr(tx) } })
+    .then(res => {
+      return res.json()
       })
-      .catch(err => {
-        toastErr(err.toString())
-      })
-      */
+    .then(data => {
+      if (data.success == 1) {
+        setDisplayFetch('Successfully Submitted')
+      }
+      else if (data.noAccount == 1){
+        setDisplayFetch('No Account')
+      }
+      else if (data.notEnoughMoney == 1) {
+        setDisplayFetch('No Enough Money')
+      }
+     /*
      fetch('/test-exchange')
      console.log(currentRate)
      setDisplayFetch('10')
-  }
+     */
+  })
+}
 
   return (
     <>
@@ -137,7 +145,7 @@ function Exchange() {
           <Button onClick={submitRequest}> Confirm Request </Button>
       </div>
       <div className="mt3">
-          <H1> ${displayFetch} </H1>
+          <H1> {displayFetch} </H1>
       </div>
     </>
   )

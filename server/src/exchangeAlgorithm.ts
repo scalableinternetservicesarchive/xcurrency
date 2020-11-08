@@ -1,5 +1,4 @@
 import { ExchangeRequest } from './entities/ExchangeRequest';
-
 //const role = Object.freeze({"buyer": 1, "seller": 2})
 
 export class exReq {
@@ -20,18 +19,8 @@ export class exReq {
   }
 }
 
-export async function checkForMatch(exchangeRequest :exReq) {
+export async function checkForMatch(exchangeRequest :exReq, exchangeRequests : ExchangeRequest []) {
   let eligibleTransac = new Map()
-    const requestbidrate = (1/exchangeRequest.bidRate)
-    const exchangeRequests = await ExchangeRequest.createQueryBuilder("exchange_request")
-                                                  .leftJoinAndSelect("exchange_request.user", "user")
-                                                  .where("fromCurrency = :requestToCountry", { requestToCountry: exchangeRequest.toCurrency })
-                                                  .andWhere("toCurrency = :requestFromCurrency", { requestFromCurrency: exchangeRequest.fromCurrency })
-                                                  .andWhere("bidRate <= :requestBidRate", { requestBidRate : requestbidrate } )
-                                                  .getMany()
-    /*console.log("All exchange Requests")
-    console.log(exchangeRequests)
-    console.log(requestbidrate)*/
     if (exchangeRequests) {
       for (let i = 0; i< exchangeRequests.length; i++){
         const middleRate = ((((1/exchangeRequests[i].bidRate) - exchangeRequest.bidRate)/2) + exchangeRequest.bidRate);
@@ -40,7 +29,7 @@ export async function checkForMatch(exchangeRequest :exReq) {
         let total_pay = (Number((exchangeRequest.amountPay * middleRate)) + Number(exchangeRequests[i].amountPay))
         let profit = (total_pay - total_want)
         if (profit >= 0) {
-          eligibleTransac.set(exchangeRequests[i].requestId,profit)
+          eligibleTransac.set(exchangeRequests[i].requestId, profit)
         }
       }
     }
@@ -52,7 +41,6 @@ export async function checkForMatch(exchangeRequest :exReq) {
       //console.log(firstKey)
       return [firstKey,firstValue]
     }
-    else {
-      return [null,null]
-    }
+  return [null,null]
+
 }

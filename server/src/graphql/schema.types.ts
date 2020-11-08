@@ -12,6 +12,16 @@ export interface Scalars {
   Float: number
 }
 
+export enum UserType {
+  Admin = 'ADMIN',
+  User = 'USER',
+}
+
+export enum AccountType {
+  Internal = 'INTERNAL',
+  External = 'EXTERNAL',
+}
+
 export interface Mutation {
   __typename?: 'Mutation'
   answerSurvey: Scalars['Boolean']
@@ -119,11 +129,6 @@ export interface User {
   userType: UserType
   email: Scalars['String']
   name: Scalars['String']
-}
-
-export enum UserType {
-  Admin = 'ADMIN',
-  User = 'USER',
 }
 
 export type ResolverTypeWrapper<T> = Promise<T> | T

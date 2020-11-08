@@ -6,10 +6,10 @@ export class TransactionRecord extends BaseEntity {
     transacId: number
 
     @Column()
-    user1: number
+    user1Id: number
 
     @Column()
-    user2: number
+    user2Id: number
 
     @CreateDateColumn()
     timeCreated: Date
@@ -20,6 +20,4 @@ export class TransactionRecord extends BaseEntity {
     @Column()
     requestId2: number
 
-    @Column("decimal", { precision: 10, scale : 2})
-    profit: number
 }
