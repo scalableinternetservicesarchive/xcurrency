@@ -12,6 +12,23 @@ export interface Scalars {
   Float: number
 }
 
+export interface Query {
+  __typename?: 'Query'
+  self?: Maybe<User>
+  user?: Maybe<User>
+  surveys: Array<Survey>
+  accounts?: Maybe<Array<Maybe<Account>>>
+  survey?: Maybe<Survey>
+}
+
+export interface QueryUserArgs {
+  id: Scalars['Int']
+}
+
+export interface QuerySurveyArgs {
+  surveyId: Scalars['Int']
+}
+
 export interface Mutation {
   __typename?: 'Mutation'
   answerSurvey: Scalars['Boolean']
@@ -31,17 +48,6 @@ export interface MutationRecordRequestArgs {
   input: ExchangeRequestInput
 }
 
-export interface Query {
-  __typename?: 'Query'
-  self?: Maybe<User>
-  surveys: Array<Survey>
-  survey?: Maybe<Survey>
-}
-
-export interface QuerySurveyArgs {
-  surveyId: Scalars['Int']
-}
-
 export interface Subscription {
   __typename?: 'Subscription'
   surveyUpdates?: Maybe<Survey>
@@ -49,6 +55,41 @@ export interface Subscription {
 
 export interface SubscriptionSurveyUpdatesArgs {
   surveyId: Scalars['Int']
+}
+
+export interface User {
+  __typename?: 'User'
+  id: Scalars['Int']
+  userType: UserType
+  email: Scalars['String']
+  name: Scalars['String']
+  account: Array<Account>
+}
+
+export interface Account {
+  __typename?: 'Account'
+  accountId: Scalars['Int']
+  country: Scalars['String']
+  type: AccountType
+  balance: Scalars['Float']
+  name?: Maybe<Scalars['String']>
+  user: User
+}
+
+export interface ExchangeRequest {
+  __typename?: 'ExchangeRequest'
+  requestId: Scalars['Int']
+  amountWant: Scalars['Float']
+  bidRate: Scalars['Float']
+  amountPay: Scalars['Float']
+  currentRate: Scalars['Float']
+  fromCurrency: Scalars['String']
+  toCurrency: Scalars['String']
+}
+
+export enum UserType {
+  Admin = 'ADMIN',
+  User = 'USER',
 }
 
 export interface Survey {
@@ -59,6 +100,15 @@ export interface Survey {
   isCompleted: Scalars['Boolean']
   currentQuestion?: Maybe<SurveyQuestion>
   questions: Array<Maybe<SurveyQuestion>>
+}
+
+export interface SurveyQuestion {
+  __typename?: 'SurveyQuestion'
+  id: Scalars['Int']
+  prompt: Scalars['String']
+  choices?: Maybe<Array<Scalars['String']>>
+  answers: Array<SurveyAnswer>
+  survey: Survey
 }
 
 export interface SurveyAnswer {
@@ -73,27 +123,6 @@ export interface SurveyInput {
   answer: Scalars['String']
 }
 
-export interface SurveyQuestion {
-  __typename?: 'SurveyQuestion'
-  id: Scalars['Int']
-  prompt: Scalars['String']
-  choices?: Maybe<Array<Scalars['String']>>
-  answers: Array<SurveyAnswer>
-  survey: Survey
-}
-
-//define interface of ExchangeRequest
-export interface ExchangeRequest {
-  __typename?: 'ExchangeRequest'
-  requestId: Scalars['Int']
-  amountWant: Scalars['Float']
-  bidRate: Scalars['Float']
-  amountPay: Scalars['Float']
-  currentRate: Scalars['Float']
-  fromCurrency: Scalars['String']
-  toCurrency: Scalars['String']
-}
-
 export interface ExchangeRequestInput {
   requestId: Scalars['Int']
   amountWant: Scalars['Float']
@@ -102,19 +131,6 @@ export interface ExchangeRequestInput {
   currentRate: Scalars['Float']
   fromCurrency: Scalars['String']
   toCurrency: Scalars['String']
-}
-
-export interface User {
-  __typename?: 'User'
-  id: Scalars['Int']
-  userType: UserType
-  email: Scalars['String']
-  name: Scalars['String']
-}
-
-export enum UserType {
-  Admin = 'ADMIN',
-  User = 'USER',
 }
 
 export enum AccountType {
@@ -200,41 +216,59 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = {
   Query: ResolverTypeWrapper<{}>
-  User: ResolverTypeWrapper<User>
   Int: ResolverTypeWrapper<Scalars['Int']>
-  UserType: UserType
-  String: ResolverTypeWrapper<Scalars['String']>
-  Survey: ResolverTypeWrapper<Survey>
+  Mutation: ResolverTypeWrapper<{}>
   Boolean: ResolverTypeWrapper<Scalars['Boolean']>
+  Subscription: ResolverTypeWrapper<{}>
+  User: ResolverTypeWrapper<User>
+  String: ResolverTypeWrapper<Scalars['String']>
+  Account: ResolverTypeWrapper<Account>
   Float: ResolverTypeWrapper<Scalars['Float']>
+  ExchangeRequest: ResolverTypeWrapper<ExchangeRequest>
+  UserType: UserType
+  Survey: ResolverTypeWrapper<Survey>
   SurveyQuestion: ResolverTypeWrapper<SurveyQuestion>
   SurveyAnswer: ResolverTypeWrapper<SurveyAnswer>
-  Mutation: ResolverTypeWrapper<{}>
   SurveyInput: SurveyInput
   ExchangeRequestInput: ExchangeRequestInput
-  Subscription: ResolverTypeWrapper<{}>
-  ExchangeRequest: ResolverTypeWrapper<ExchangeRequest>
+  AccountType: AccountType
 }
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = {
   Query: {}
-  User: User
   Int: Scalars['Int']
-  String: Scalars['String']
-  Float: Scalars['Float']
-  Survey: Survey
+  Mutation: {}
   Boolean: Scalars['Boolean']
+  Subscription: {}
+  User: User
+  String: Scalars['String']
+  Account: Account
+  Float: Scalars['Float']
+  ExchangeRequest: ExchangeRequest
+  Survey: Survey
   SurveyQuestion: SurveyQuestion
   SurveyAnswer: SurveyAnswer
-  ExchangeRequest: ExchangeRequest
-  Mutation: {}
   SurveyInput: SurveyInput
   ExchangeRequestInput: ExchangeRequestInput
-  Subscription: {}
 }
 
-// Add Mutation resolver interfaces
+export type QueryResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']
+> = {
+  self?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>
+  user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType, RequireFields<QueryUserArgs, 'id'>>
+  surveys?: Resolver<Array<ResolversTypes['Survey']>, ParentType, ContextType>
+  accounts?: Resolver<Maybe<Array<Maybe<ResolversTypes['Account']>>>, ParentType, ContextType>
+  survey?: Resolver<
+    Maybe<ResolversTypes['Survey']>,
+    ParentType,
+    ContextType,
+    RequireFields<QuerySurveyArgs, 'surveyId'>
+  >
+}
+
 export type MutationResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']
@@ -259,20 +293,6 @@ export type MutationResolvers<
   >
 }
 
-export type QueryResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']
-> = {
-  self?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>
-  surveys?: Resolver<Array<ResolversTypes['Survey']>, ParentType, ContextType>
-  survey?: Resolver<
-    Maybe<ResolversTypes['Survey']>,
-    ParentType,
-    ContextType,
-    RequireFields<QuerySurveyArgs, 'surveyId'>
-  >
-}
-
 export type SubscriptionResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['Subscription'] = ResolversParentTypes['Subscription']
@@ -286,7 +306,44 @@ export type SubscriptionResolvers<
   >
 }
 
-//adding types resolvers.
+export type UserResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['User'] = ResolversParentTypes['User']
+> = {
+  id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>
+  userType?: Resolver<ResolversTypes['UserType'], ParentType, ContextType>
+  email?: Resolver<ResolversTypes['String'], ParentType, ContextType>
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>
+  account?: Resolver<Array<ResolversTypes['Account']>, ParentType, ContextType>
+  __isTypeOf?: IsTypeOfResolverFn<ParentType>
+}
+
+export type AccountResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['Account'] = ResolversParentTypes['Account']
+> = {
+  accountId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>
+  country?: Resolver<ResolversTypes['String'], ParentType, ContextType>
+  type?: Resolver<ResolversTypes['AccountType'], ParentType, ContextType>
+  balance?: Resolver<ResolversTypes['Float'], ParentType, ContextType>
+  name?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>
+  user?: Resolver<ResolversTypes['User'], ParentType, ContextType>
+  __isTypeOf?: IsTypeOfResolverFn<ParentType>
+}
+
+export type ExchangeRequestResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['ExchangeRequest'] = ResolversParentTypes['ExchangeRequest']
+> = {
+  requestId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>
+  amountWant?: Resolver<ResolversTypes['Float'], ParentType, ContextType>
+  bidRate?: Resolver<ResolversTypes['Float'], ParentType, ContextType>
+  amountPay?: Resolver<ResolversTypes['Float'], ParentType, ContextType>
+  currentRate?: Resolver<ResolversTypes['Float'], ParentType, ContextType>
+  fromCurrency?: Resolver<ResolversTypes['String'], ParentType, ContextType>
+  toCurrency?: Resolver<ResolversTypes['String'], ParentType, ContextType>
+  __isTypeOf?: IsTypeOfResolverFn<ParentType>
+}
 
 export type SurveyResolvers<
   ContextType = any,
@@ -298,29 +355,6 @@ export type SurveyResolvers<
   isCompleted?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>
   currentQuestion?: Resolver<Maybe<ResolversTypes['SurveyQuestion']>, ParentType, ContextType>
   questions?: Resolver<Array<Maybe<ResolversTypes['SurveyQuestion']>>, ParentType, ContextType>
-  __isTypeOf?: IsTypeOfResolverFn<ParentType>
-}
-
-export type SurveyAnswerResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['SurveyAnswer'] = ResolversParentTypes['SurveyAnswer']
-> = {
-  id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>
-  answer?: Resolver<ResolversTypes['String'], ParentType, ContextType>
-  question?: Resolver<ResolversTypes['SurveyQuestion'], ParentType, ContextType>
-  __isTypeOf?: IsTypeOfResolverFn<ParentType>
-}
-
-export type ExchangeRequestResolver<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['ExchangeRequest'] = ResolversParentTypes['ExchangeRequest']
-> = {
-  requestId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>
-  amountWant?: Resolver<ResolversTypes['Float'], ParentType, ContextType>
-  bidRate?: Resolver<ResolversTypes['Float'], ParentType, ContextType>
-  amountPay?: Resolver<ResolversTypes['Float'], ParentType, ContextType>
-  fromCurrency?: Resolver<ResolversTypes['String'], ParentType, ContextType>
-  toCurrency?: Resolver<ResolversTypes['String'], ParentType, ContextType>
   __isTypeOf?: IsTypeOfResolverFn<ParentType>
 }
 
@@ -336,26 +370,26 @@ export type SurveyQuestionResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType>
 }
 
-export type UserResolvers<
+export type SurveyAnswerResolvers<
   ContextType = any,
-  ParentType extends ResolversParentTypes['User'] = ResolversParentTypes['User']
+  ParentType extends ResolversParentTypes['SurveyAnswer'] = ResolversParentTypes['SurveyAnswer']
 > = {
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>
-  userType?: Resolver<ResolversTypes['UserType'], ParentType, ContextType>
-  email?: Resolver<ResolversTypes['String'], ParentType, ContextType>
-  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>
+  answer?: Resolver<ResolversTypes['String'], ParentType, ContextType>
+  question?: Resolver<ResolversTypes['SurveyQuestion'], ParentType, ContextType>
   __isTypeOf?: IsTypeOfResolverFn<ParentType>
 }
 
 export type Resolvers<ContextType = any> = {
-  Mutation?: MutationResolvers<ContextType>
   Query?: QueryResolvers<ContextType>
+  Mutation?: MutationResolvers<ContextType>
   Subscription?: SubscriptionResolvers<ContextType>
-  Survey?: SurveyResolvers<ContextType>
-  SurveyAnswer?: SurveyAnswerResolvers<ContextType>
-  SurveyQuestion?: SurveyQuestionResolvers<ContextType>
   User?: UserResolvers<ContextType>
-  ExchangeRequest?: ExchangeRequestResolver<ContextType>
+  Account?: AccountResolvers<ContextType>
+  ExchangeRequest?: ExchangeRequestResolvers<ContextType>
+  Survey?: SurveyResolvers<ContextType>
+  SurveyQuestion?: SurveyQuestionResolvers<ContextType>
+  SurveyAnswer?: SurveyAnswerResolvers<ContextType>
 }
 
 /**

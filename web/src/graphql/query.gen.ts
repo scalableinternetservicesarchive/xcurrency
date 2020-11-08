@@ -4,6 +4,35 @@
 // This file was automatically generated and should not be edited.
 
 // ====================================================
+// GraphQL query operation: FetchAccounts
+// ====================================================
+
+export interface FetchAccounts_user_account {
+  __typename: "Account";
+  accountId: number;
+  name: string | null;
+  balance: number;
+}
+
+export interface FetchAccounts_user {
+  __typename: "User";
+  account: FetchAccounts_user_account[];
+}
+
+export interface FetchAccounts {
+  user: FetchAccounts_user | null;
+}
+
+export interface FetchAccountsVariables {
+  id: number;
+}
+
+/* tslint:disable */
+/* eslint-disable */
+// @generated
+// This file was automatically generated and should not be edited.
+
+// ====================================================
 // GraphQL query operation: FetchUserContext
 // ====================================================
 

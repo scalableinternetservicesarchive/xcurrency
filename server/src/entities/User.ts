@@ -45,8 +45,6 @@ export class User extends BaseEntity implements GraphqlUser {
   })
   password: string
 
-  country: string
-
   @OneToMany(() => ExchangeRequest, exchangeRequest => exchangeRequest.user)
   exchangeRequest: ExchangeRequest[]
 

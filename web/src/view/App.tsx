@@ -18,6 +18,7 @@ import { PlaygroundPage } from './page/PlaygroundPage'
 import { ProfilePage } from './page/ProfilePage'
 import { ProjectsPage } from './page/ProjectsPage'
 import { SignupPage } from './page/SignupPage'
+import { TransferBalancePage } from './page/TransferBalancePage'
 
 const Styletron = require('styletron-engine-monolithic')
 
@@ -63,6 +64,7 @@ export function AppBody() {
         <ExchangeForm path={Route.EXCHANGE} />
         <LecturesPage path={Route.LECTURES} />
         <ProjectsPage path={Route.PROJECTS} />
+        <TransferBalancePage path={Route.TRANSFER_BALANCE} />
         <PlaygroundPage path={Route.PLAYGROUND} />
         <PlaygroundPage path={Route.PLAYGROUND_APP} />
       </Router>

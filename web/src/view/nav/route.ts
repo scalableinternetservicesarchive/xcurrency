@@ -12,6 +12,7 @@ export enum Route {
   SIGNUP = 'app/signup',
   PROFILE = 'app/profile',
   EXCHANGE = 'app/exchange',
+  TRANSFER_BALANCE = 'app/transferBalance',
   PLAYGROUND = 'app/playground',
   PLAYGROUND_APP = 'app/playground/:app',
 }
