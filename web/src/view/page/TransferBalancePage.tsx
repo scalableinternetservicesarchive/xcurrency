@@ -2,17 +2,18 @@ import { useQuery } from '@apollo/client'
 import { navigate, RouteComponentProps } from '@reach/router'
 import * as React from 'react'
 import { useContext } from 'react'
+import CurrencyInput from 'react-currency-input-field'
 import Select from 'react-select'
 import { check } from '../../../../common/src/util'
 import { FetchAccounts, FetchAccountsVariables, FetchAccounts_user_account } from '../../graphql/query.gen'
 import { Button } from '../../style/button'
-import { Input } from '../../style/input'
 import { Spacer } from '../../style/spacer'
 import { fetchAccounts } from '../accounts/fetchAccounts'
 import { UserContext } from '../auth/user'
 import { AppRouteParams, getPath, Route } from '../nav/route'
 import { toastErr } from '../toast/toast'
 import { Page } from './Page'
+const getSymbolFromCurrency = require('currency-symbol-map')
 
 interface TransferBalancePageProps extends RouteComponentProps, AppRouteParams {}
 
@@ -42,7 +43,6 @@ function SelectAccount(props: SelectAccountProps) {
   let options: AccountSelectOptions[] = []
   if (userAccounts) {
     const transferFromAccount = userAccounts?.find(account => account.accountId === fromAccountId)
-
     options = userAccounts
       .filter(account => {
         return (
@@ -50,10 +50,18 @@ function SelectAccount(props: SelectAccountProps) {
           (account.country === transferFromAccount.country && account.accountId !== transferFromAccount.accountId)
         )
       })
+      .sort((a, b) => {
+        if (a.country > b.country) {
+          return 1
+        }
+        if (a.country < b.country) {
+          return -1
+        }
+        return a.name! > b.name! ? 1 : -1
+      })
       .map(account => {
         return { value: account.accountId, label: account.name }
       })
-      .sort((a, b) => (a.label! > b.label! ? 1 : -1))
   }
 
   // Set larger width
@@ -72,24 +80,23 @@ function TransferForm() {
   const [fromAccountId, setTransferFromAccountId] = React.useState(-1)
   const [toAccountId, setTransferToAccountId] = React.useState(-1)
   const [amount, setAmount] = React.useState('')
+  const [currencySymbol, setCurrencySymbol] = React.useState('')
   const [reset, setReset] = React.useState(false)
-  const [err, setError] = React.useState({ amount: false })
 
   async function transfer() {
     if (fromAccountId === -1) {
-      toastErr('Please an account to transfer funds out of!')
+      toastErr('Please specify an account to transfer funds out of!')
       return
     }
 
     if (toAccountId === -1) {
-      toastErr('Please an account to transfer funds into!')
+      toastErr('Please specify an account to transfer funds into!')
       return
     }
 
     const amountToTransfer = parseFloat(amount)
     if (amountToTransfer <= 0) {
       toastErr('The amount to transfer must greater than 0!')
-      setError({ amount: true })
       return
     }
     fetch('/transferBalance', {
@@ -104,12 +111,16 @@ function TransferForm() {
       })
       .catch(err => {
         toastErr('Cannot process transfer due to insufficient funds!')
-        setError({ amount: true })
       })
   }
 
-  function handleTransferFrom(selectedOption?: AccountSelectOptions | null) {
-    setTransferFromAccountId(selectedOption!.value)
+  function handleTransferFrom(userAccounts: FetchAccounts_user_account[], accountId: number) {
+    setTransferFromAccountId(accountId)
+
+    const transferFromAccount = userAccounts.find(account => account.accountId === accountId)
+    setCurrencySymbol(getSymbolFromCurrency(transferFromAccount?.country!))
+
+    // Reset the transfer to field
     setTransferToAccountId(-1)
     setReset(true)
   }
@@ -117,6 +128,12 @@ function TransferForm() {
   function handleTransferTo(selectedOption?: AccountSelectOptions | null) {
     setReset(false)
     setTransferToAccountId(selectedOption!.value)
+  }
+
+  function handleAmountChange(value: string | undefined) {
+    if (value) {
+      setAmount(value)
+    }
   }
 
   const user = useContext(UserContext).user
@@ -130,7 +147,13 @@ function TransferForm() {
       <div>
         <label className="db fw4 lh-copy f6">Transfer From</label>
         {userAccounts && (
-          <SelectAccount handleChange={handleTransferFrom} isDisabled={false} userAccounts={userAccounts} />
+          <SelectAccount
+            handleChange={(selectedOption?: AccountSelectOptions | null) =>
+              handleTransferFrom(userAccounts, selectedOption!.value)
+            }
+            isDisabled={false}
+            userAccounts={userAccounts}
+          />
         )}
       </div>
       <Spacer $h4 />
@@ -145,10 +168,15 @@ function TransferForm() {
             reset={reset ? null : undefined}
           />
         )}
-        <div className="mt3">
-          <label className="db fw4 lh-copy f6">Amount</label>
-          <Input $hasError={err.amount} $onChange={setAmount} name="amount" />
-        </div>
+        <Spacer $h2 />
+        <label className="db fw4 lh-copy f6">Amount:</label>
+        <CurrencyInput
+          style={{ border: '1px solid hsl(0,0%,80%)', width: '100%', padding: '0.5rem' }}
+          onChange={handleAmountChange}
+          allowNegativeValue={false}
+          placeholder={currencySymbol + '0.00'}
+          prefix={currencySymbol}
+        />
       </div>
       <Spacer $h2 />
       <div className="mt3">
