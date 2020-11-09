@@ -20,6 +20,7 @@ type Query {
   user(id: Int!): User
   surveys: [Survey!]!
   accounts: [Account]
+  account(accountId: Int!): Account
 
   survey(surveyId: Int!): Survey
 
@@ -36,6 +37,9 @@ type Mutation {
 
   #Records an request to a database
   recordRequest(input: ExchangeRequestInput!): Boolean!
+
+  # Update account balance
+  updateBalance(input: AccountInput!): Boolean!
 }
 
 type Subscription {
@@ -128,6 +132,11 @@ type SurveyAnswer {
 input SurveyInput {
   questionId: Int!
   answer: String!
+}
+
+input AccountInput {
+  accountId: Int!
+  balance: Float!
 }
 
 input ExchangeRequestInput {

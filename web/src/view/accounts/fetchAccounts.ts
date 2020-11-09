@@ -7,7 +7,16 @@ export const fetchAccounts = gql`
         accountId
         name
         balance
+        country
       }
+    }
+  }
+`
+
+export const fetchAccount = gql`
+  query FetchAccount($accountId: Int!) {
+    account(accountId: $accountId) {
+      name
     }
   }
 `

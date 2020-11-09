@@ -33,6 +33,10 @@ export const graphqlRoot: Resolvers<Context> = {
     survey: async (_, { surveyId }) => (await Survey.findOne({ where: { id: surveyId } })) || null,
     surveys: () => Survey.find(),
     accounts: () => Account.find(),
+    account: async (_, { accountId }) => {
+      const account = await Account.findOne({ where: { accountId } })
+      return account || null
+    },
   },
   Mutation: {
     answerSurvey: async (_, { input }, ctx) => {
@@ -56,6 +60,13 @@ export const graphqlRoot: Resolvers<Context> = {
       await survey.save()
       ctx.pubsub.publish('SURVEY_UPDATE_' + surveyId, survey)
       return survey
+    },
+    updateBalance: async (_, { input }) => {
+      const { accountId, balance } = input
+      const account = check(await Account.findOne({ where: { accountId } }))
+      account.balance = balance
+      await account.save()
+      return true
     },
   },
   Subscription: {

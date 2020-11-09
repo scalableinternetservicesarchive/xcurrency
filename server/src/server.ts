@@ -20,7 +20,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { checkEqual, Unpromise } from '../../common/src/util'
 import { Config } from './config'
 import { migrate } from './db/migrate'
-import { initORM, query } from './db/sql'
+import { initORM, query, transaction } from './db/sql'
 import { Account } from './entities/Accounts'
 import { Session } from './entities/Session'
 import { User } from './entities/User'
@@ -328,7 +328,7 @@ server.express.post('/getPlaidAccessToken', async (req, res) => {
               // Create the external account
               let { current: balance, iso_currency_code } = account.balances
               await Account.insert({
-                name: account.name,
+                name: `${account.name} - ${iso_currency_code}`,
                 country: iso_currency_code,
                 balance,
                 user,
@@ -345,6 +345,7 @@ server.express.post('/getPlaidAccessToken', async (req, res) => {
               if (existingInternalAccount.length == 0) {
                 await Account.insert({
                   country: iso_currency_code,
+                  name: `Multicurrency Account - ${iso_currency_code}`,
                   balance: 0,
                   user,
                   type: AccountType.Internal,
@@ -359,6 +360,30 @@ server.express.post('/getPlaidAccessToken', async (req, res) => {
     return res.send({ error: e.message })
   }
   return res.sendStatus(200)
+})
+
+server.express.post('/transferBalance', async (req, res) => {
+  const { fromAccountId, toAccountId, amount } = req.body
+  await transaction(async () => {
+    const fromAccount = await Account.findOne({ where: { accountId: fromAccountId } })
+    if (!fromAccount) {
+      return res.status(400).send({ error: 'The account to transfer funds from does not exist!' })
+    }
+    const toAccount = await Account.findOne({ where: { accountId: toAccountId } })
+    if (!toAccount) {
+      return res.status(400).send({ error: 'The account to transfer funds to does not exist!' })
+    }
+    if (fromAccount.balance < amount) {
+      return res.status(400).send({ error: 'Insufficient funds!' })
+    }
+
+    fromAccount.balance -= amount
+    await fromAccount.save()
+    toAccount.balance += amount
+    await toAccount.save()
+
+    return res.sendStatus(200)
+  })
 })
 
 initORM()

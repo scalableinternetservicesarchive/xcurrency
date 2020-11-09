@@ -18,11 +18,16 @@ export interface Query {
   user?: Maybe<User>
   surveys: Array<Survey>
   accounts?: Maybe<Array<Maybe<Account>>>
+  account?: Maybe<Account>
   survey?: Maybe<Survey>
 }
 
 export interface QueryUserArgs {
   id: Scalars['Int']
+}
+
+export interface QueryAccountArgs {
+  accountId: Scalars['Int']
 }
 
 export interface QuerySurveyArgs {
@@ -34,6 +39,7 @@ export interface Mutation {
   answerSurvey: Scalars['Boolean']
   nextSurveyQuestion?: Maybe<Survey>
   recordRequest: Scalars['Boolean']
+  updateBalance: Scalars['Boolean']
 }
 
 export interface MutationAnswerSurveyArgs {
@@ -46,6 +52,10 @@ export interface MutationNextSurveyQuestionArgs {
 
 export interface MutationRecordRequestArgs {
   input: ExchangeRequestInput
+}
+
+export interface MutationUpdateBalanceArgs {
+  input: AccountInput
 }
 
 export interface Subscription {
@@ -121,6 +131,11 @@ export interface SurveyAnswer {
 export interface SurveyInput {
   questionId: Scalars['Int']
   answer: Scalars['String']
+}
+
+export interface AccountInput {
+  accountId: Scalars['Int']
+  balance: Scalars['Float']
 }
 
 export interface ExchangeRequestInput {
@@ -230,6 +245,7 @@ export type ResolversTypes = {
   SurveyQuestion: ResolverTypeWrapper<SurveyQuestion>
   SurveyAnswer: ResolverTypeWrapper<SurveyAnswer>
   SurveyInput: SurveyInput
+  AccountInput: AccountInput
   ExchangeRequestInput: ExchangeRequestInput
   AccountType: AccountType
 }
@@ -250,6 +266,7 @@ export type ResolversParentTypes = {
   SurveyQuestion: SurveyQuestion
   SurveyAnswer: SurveyAnswer
   SurveyInput: SurveyInput
+  AccountInput: AccountInput
   ExchangeRequestInput: ExchangeRequestInput
 }
 
@@ -261,6 +278,12 @@ export type QueryResolvers<
   user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType, RequireFields<QueryUserArgs, 'id'>>
   surveys?: Resolver<Array<ResolversTypes['Survey']>, ParentType, ContextType>
   accounts?: Resolver<Maybe<Array<Maybe<ResolversTypes['Account']>>>, ParentType, ContextType>
+  account?: Resolver<
+    Maybe<ResolversTypes['Account']>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryAccountArgs, 'accountId'>
+  >
   survey?: Resolver<
     Maybe<ResolversTypes['Survey']>,
     ParentType,
@@ -290,6 +313,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationRecordRequestArgs, 'input'>
+  >
+  updateBalance?: Resolver<
+    ResolversTypes['Boolean'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateBalanceArgs, 'input'>
   >
 }
 

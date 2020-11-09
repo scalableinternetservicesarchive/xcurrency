@@ -12,6 +12,7 @@ export interface FetchAccounts_user_account {
   accountId: number;
   name: string | null;
   balance: number;
+  country: string;
 }
 
 export interface FetchAccounts_user {
@@ -25,6 +26,45 @@ export interface FetchAccounts {
 
 export interface FetchAccountsVariables {
   id: number;
+}
+
+/* tslint:disable */
+/* eslint-disable */
+// @generated
+// This file was automatically generated and should not be edited.
+
+// ====================================================
+// GraphQL query operation: FetchAccount
+// ====================================================
+
+export interface FetchAccount_account {
+  __typename: "Account";
+  name: string | null;
+}
+
+export interface FetchAccount {
+  account: FetchAccount_account | null;
+}
+
+export interface FetchAccountVariables {
+  accountId: number;
+}
+
+/* tslint:disable */
+/* eslint-disable */
+// @generated
+// This file was automatically generated and should not be edited.
+
+// ====================================================
+// GraphQL mutation operation: ModifyAccountBalance
+// ====================================================
+
+export interface ModifyAccountBalance {
+  updateBalance: boolean;
+}
+
+export interface ModifyAccountBalanceVariables {
+  input: AccountInput;
 }
 
 /* tslint:disable */
@@ -281,6 +321,11 @@ export interface SurveyQuestion {
 export enum UserType {
   ADMIN = "ADMIN",
   USER = "USER",
+}
+
+export interface AccountInput {
+  accountId: number;
+  balance: number;
 }
 
 export interface SurveyInput {
