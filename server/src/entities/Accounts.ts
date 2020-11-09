@@ -32,7 +32,7 @@ export class Account extends BaseEntity /*implements GraphqlAccount*/ {
   })
   type: AccountType
 
-  @Column()
+  @Column('decimal', { precision: 13, scale: 2 })
   balance: number
 
   @Column({

@@ -388,9 +388,9 @@ server.express.post('/transferBalance', async (req, res) => {
       return res.status(400).send({ error: 'Insufficient funds!' })
     }
 
-    fromAccount.balance -= amount
+    fromAccount.balance = +fromAccount.balance - +amount
     await fromAccount.save()
-    toAccount.balance += amount
+    toAccount.balance = +toAccount.balance + +amount
     await toAccount.save()
 
     return res.sendStatus(200)

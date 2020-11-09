@@ -30,9 +30,9 @@ interface AccountSelectOptions {
 }
 
 interface SelectAccountProps {
-  handleChange: any
   userAccounts: FetchAccounts_user_account[]
   fromAccountId?: number
+  handleChange: any
   reset?: null | undefined
   isDisabled: boolean
 }
@@ -108,19 +108,13 @@ function TransferForm() {
       })
   }
 
-  function handleTransferFrom(selectedOption?: AccountSelectOptions | AccountSelectOptions[] | null) {
-    if (Array.isArray(selectedOption)) {
-      return
-    }
+  function handleTransferFrom(selectedOption?: AccountSelectOptions | null) {
     setTransferFromAccountId(selectedOption!.value)
     setTransferToAccountId(-1)
     setReset(true)
   }
 
-  function handleTransferTo(selectedOption?: AccountSelectOptions | AccountSelectOptions[] | null) {
-    if (Array.isArray(selectedOption)) {
-      return
-    }
+  function handleTransferTo(selectedOption?: AccountSelectOptions | null) {
     setReset(false)
     setTransferToAccountId(selectedOption!.value)
   }
