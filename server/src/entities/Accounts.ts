@@ -5,15 +5,15 @@ import {
   Entity,
   ManyToOne,
   PrimaryGeneratedColumn,
-  UpdateDateColumn,
+  UpdateDateColumn
 } from 'typeorm'
 import { AccountType } from '../graphql/schema.types'
 import { User } from './User'
 
 @Entity()
-export class Account extends BaseEntity /*implements GraphqlAccount*/ {
+export class Account extends BaseEntity {
   @PrimaryGeneratedColumn()
-  accountId: number
+  id: number
 
   @CreateDateColumn()
   timeCreated: Date
@@ -29,10 +29,11 @@ export class Account extends BaseEntity /*implements GraphqlAccount*/ {
   @Column({
     type: 'enum',
     enum: AccountType,
+    default: AccountType.Internal,
   })
   type: AccountType
 
-  @Column()
+  @Column("decimal", { precision: 10, scale : 2})
   balance: number
 
   @ManyToOne(() => User, user => user.account)

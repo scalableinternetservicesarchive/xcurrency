@@ -115,7 +115,7 @@ export interface User {
 
 export interface Account {
   __typename?: 'Account'
-  accountId: Scalars['Int']
+  id: Scalars['Int']
   country: Scalars['String']
   type: AccountType
   balance: Scalars['Float']
@@ -219,7 +219,6 @@ export type ResolversTypes = {
   Boolean: ResolverTypeWrapper<Scalars['Boolean']>
   Float: ResolverTypeWrapper<Scalars['Float']>
   SurveyQuestion: ResolverTypeWrapper<SurveyQuestion>
-  Account: ResolverTypeWrapper<Account>
   AccountType: ResolverTypeWrapper<AccountType>
   SurveyAnswer: ResolverTypeWrapper<SurveyAnswer>
   Mutation: ResolverTypeWrapper<{}>
@@ -227,6 +226,7 @@ export type ResolversTypes = {
   ExchangeRequestInput: ExchangeRequestInput
   Subscription: ResolverTypeWrapper<{}>
   ExchangeRequest: ResolverTypeWrapper<ExchangeRequest>
+  Account : ResolverTypeWrapper<Account>
 }
 
 /** Mapping between all available schema types and the resolvers parents */
@@ -339,6 +339,21 @@ export type ExchangeRequestResolver<
   __isTypeOf?: IsTypeOfResolverFn<ParentType>
 }
 
+
+export type AccountResolver<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['Account'] = ResolversParentTypes['Account']
+  > = {
+  id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>
+  country?: Resolver<ResolversTypes['Float'], ParentType, ContextType>
+  type?: Resolver<ResolversTypes['String'], ParentType, ContextType>
+  balance?: Resolver<ResolversTypes['Float'], ParentType, ContextType>
+  user?: Resolver<ResolversTypes['User'], ParentType, ContextType>
+  __isTypeOf?: IsTypeOfResolverFn<ParentType>
+}
+
+
+
 export type SurveyQuestionResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['SurveyQuestion'] = ResolversParentTypes['SurveyQuestion']
@@ -398,6 +413,7 @@ export type Resolvers<ContextType = any> = {
   User?: UserResolvers<ContextType>
   Account?: AccountResolvers<ContextType>
   ExchangeRequest?: ExchangeRequestResolver<ContextType>
+
 }
 
 /**

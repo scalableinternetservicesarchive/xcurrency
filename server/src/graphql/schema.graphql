@@ -50,7 +50,7 @@ type User {
 }
 
 type Account {
-  accountId: Int!
+  id: Int!
   country: String!
   type: AccountType!
   balance: Float!
