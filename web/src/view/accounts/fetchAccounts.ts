@@ -4,7 +4,7 @@ export const fetchAccounts = gql`
   query FetchAccounts($id: Int!) {
     user(id: $id) {
       account {
-        accountId
+        id
         name
         balance
         country
@@ -14,8 +14,8 @@ export const fetchAccounts = gql`
 `
 
 export const fetchAccount = gql`
-  query FetchAccount($accountId: Int!) {
-    account(accountId: $accountId) {
+  query FetchAccount($id: Int!) {
+    account(id: $id) {
       name
     }
   }

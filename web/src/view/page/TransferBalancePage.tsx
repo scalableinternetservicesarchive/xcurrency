@@ -42,12 +42,12 @@ function SelectAccount(props: SelectAccountProps) {
   let { userAccounts, fromAccountId, handleChange, isDisabled, reset } = props
   let options: AccountSelectOptions[] = []
   if (userAccounts) {
-    const transferFromAccount = userAccounts?.find(account => account.accountId === fromAccountId)
+    const transferFromAccount = userAccounts?.find(account => account.id === fromAccountId)
     options = userAccounts
       .filter(account => {
         return (
           !transferFromAccount ||
-          (account.country === transferFromAccount.country && account.accountId !== transferFromAccount.accountId)
+          (account.country === transferFromAccount.country && account.id !== transferFromAccount.id)
         )
       })
       .sort((a, b) => {
@@ -60,7 +60,7 @@ function SelectAccount(props: SelectAccountProps) {
         return a.name! > b.name! ? 1 : -1
       })
       .map(account => {
-        return { value: account.accountId, label: account.name }
+        return { value: account.id, label: account.name }
       })
   }
 
@@ -117,7 +117,7 @@ function TransferForm() {
   function handleTransferFrom(userAccounts: FetchAccounts_user_account[], accountId: number) {
     setTransferFromAccountId(accountId)
 
-    const transferFromAccount = userAccounts.find(account => account.accountId === accountId)
+    const transferFromAccount = userAccounts.find(account => account.id === accountId)
     setCurrencySymbol(getSymbolFromCurrency(transferFromAccount?.country!))
 
     // Reset the transfer to field

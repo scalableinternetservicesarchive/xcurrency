@@ -33,8 +33,8 @@ export const graphqlRoot: Resolvers<Context> = {
     survey: async (_, { surveyId }) => (await Survey.findOne({ where: { id: surveyId } })) || null,
     surveys: () => Survey.find(),
     accounts: () => Account.find(),
-    account: async (_, { accountId }) => {
-      const account = await Account.findOne({ where: { accountId } })
+    account: async (_, { id }) => {
+      const account = await Account.findOne({ where: { id } })
       return account || null
     },
   },
@@ -62,8 +62,8 @@ export const graphqlRoot: Resolvers<Context> = {
       return survey
     },
     updateBalance: async (_, { input }) => {
-      const { accountId, balance } = input
-      const account = check(await Account.findOne({ where: { accountId } }))
+      const { id, balance } = input
+      const account = check(await Account.findOne({ where: { id } }))
       account.balance = balance
       await account.save()
       return true

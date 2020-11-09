@@ -9,7 +9,7 @@
 
 export interface FetchAccounts_user_account {
   __typename: "Account";
-  accountId: number;
+  id: number;
   name: string | null;
   balance: number;
   country: string;
@@ -47,7 +47,7 @@ export interface FetchAccount {
 }
 
 export interface FetchAccountVariables {
-  accountId: number;
+  id: number;
 }
 
 /* tslint:disable */
@@ -324,7 +324,7 @@ export enum UserType {
 }
 
 export interface AccountInput {
-  accountId: number;
+  id: number;
   balance: number;
 }
 

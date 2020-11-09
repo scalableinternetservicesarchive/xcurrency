@@ -956,7 +956,7 @@
             "description": null,
             "args": [
               {
-                "name": "accountId",
+                "name": "id",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -1295,7 +1295,7 @@
         "description": null,
         "fields": [
           {
-            "name": "accountId",
+            "name": "id",
             "description": null,
             "args": [],
             "type": {
@@ -1863,7 +1863,7 @@
         "fields": null,
         "inputFields": [
           {
-            "name": "accountId",
+            "name": "id",
             "description": null,
             "type": {
               "kind": "NON_NULL",

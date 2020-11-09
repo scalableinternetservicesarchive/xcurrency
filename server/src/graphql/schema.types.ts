@@ -27,7 +27,7 @@ export interface QueryUserArgs {
 }
 
 export interface QueryAccountArgs {
-  accountId: Scalars['Int']
+  id: Scalars['Int']
 }
 
 export interface QuerySurveyArgs {
@@ -78,7 +78,7 @@ export interface User {
 
 export interface Account {
   __typename?: 'Account'
-  accountId: Scalars['Int']
+  id: Scalars['Int']
   country: Scalars['String']
   type: AccountType
   balance: Scalars['Float']
@@ -134,7 +134,7 @@ export interface SurveyInput {
 }
 
 export interface AccountInput {
-  accountId: Scalars['Int']
+  id: Scalars['Int']
   balance: Scalars['Float']
 }
 
@@ -278,12 +278,7 @@ export type QueryResolvers<
   user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType, RequireFields<QueryUserArgs, 'id'>>
   surveys?: Resolver<Array<ResolversTypes['Survey']>, ParentType, ContextType>
   accounts?: Resolver<Maybe<Array<Maybe<ResolversTypes['Account']>>>, ParentType, ContextType>
-  account?: Resolver<
-    Maybe<ResolversTypes['Account']>,
-    ParentType,
-    ContextType,
-    RequireFields<QueryAccountArgs, 'accountId'>
-  >
+  account?: Resolver<Maybe<ResolversTypes['Account']>, ParentType, ContextType, RequireFields<QueryAccountArgs, 'id'>>
   survey?: Resolver<
     Maybe<ResolversTypes['Survey']>,
     ParentType,
@@ -351,7 +346,7 @@ export type AccountResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['Account'] = ResolversParentTypes['Account']
 > = {
-  accountId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>
+  id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>
   country?: Resolver<ResolversTypes['String'], ParentType, ContextType>
   type?: Resolver<ResolversTypes['AccountType'], ParentType, ContextType>
   balance?: Resolver<ResolversTypes['Float'], ParentType, ContextType>

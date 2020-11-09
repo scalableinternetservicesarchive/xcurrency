@@ -11,9 +11,9 @@ import { AccountType } from '../graphql/schema.types'
 import { User } from './User'
 
 @Entity()
-export class Account extends BaseEntity /*implements GraphqlAccount*/ {
+export class Account extends BaseEntity {
   @PrimaryGeneratedColumn()
-  accountId: number
+  id: number
 
   @CreateDateColumn()
   timeCreated: Date
@@ -29,10 +29,11 @@ export class Account extends BaseEntity /*implements GraphqlAccount*/ {
   @Column({
     type: 'enum',
     enum: AccountType,
+    default: AccountType.Internal,
   })
   type: AccountType
 
-  @Column('decimal', { precision: 13, scale: 2 })
+  @Column('decimal', { precision: 10, scale: 2 })
   balance: number
 
   @Column({

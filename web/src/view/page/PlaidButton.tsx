@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { usePlaidLink } from 'react-plaid-link'
-import { toast, toastErr } from '../toast/toast'
+import { toastErr } from '../toast/toast'
 
 interface PlaidLinkProps {
   link_token: string
@@ -15,7 +15,8 @@ export function PlaidButton(props: PlaidLinkProps) {
       body: JSON.stringify({ public_token: token }),
     })
       .then(res => {
-        toast('Successfully connected with external bank accounts!')
+        alert('Successfully connected with external bank accounts!')
+        window.location.reload()
       })
       .catch(err => {
         toastErr(err)

@@ -20,7 +20,7 @@ type Query {
   user(id: Int!): User
   surveys: [Survey!]!
   accounts: [Account]
-  account(accountId: Int!): Account
+  account(id: Int!): Account
 
   survey(surveyId: Int!): Survey
 
@@ -55,7 +55,7 @@ type User {
 }
 
 type Account {
-  accountId: Int!
+  id: Int!
   country: String!
   type: AccountType!
   balance: Float!
@@ -135,7 +135,7 @@ input SurveyInput {
 }
 
 input AccountInput {
-  accountId: Int!
+  id: Int!
   balance: Float!
 }
 
