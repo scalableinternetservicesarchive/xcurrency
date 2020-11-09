@@ -299,6 +299,10 @@ server.express.post('/getPlaidLinkToken', async (req: any, res) => {
   }
 })
 
+/*
+ * Links an external bank institution with Plaid, creating any necessary
+ * external accounts and internal multicurrency accounts
+ */
 server.express.post('/getPlaidAccessToken', async (req, res) => {
   try {
     const publicToken = req.body.public_token
@@ -311,41 +315,48 @@ server.express.post('/getPlaidAccessToken', async (req, res) => {
     if (authToken) {
       const session = await Session.findOne({ where: { authToken }, relations: ['user'] })
       if (session) {
-        // save the access token for future use
+        // Save the access token for future use
         const user = session.user
         user.plaidAccessToken = accessToken
         await user.save()
 
-        // retrieve balances of all accounts
-        const { accounts } = await plaidClient.getAccounts(accessToken)
+        const { accounts: externalAccounts } = await plaidClient.getAccounts(accessToken)
+        for (const externalAccount of externalAccounts) {
+          if (externalAccount.subtype === 'savings' || externalAccount.subtype == 'checking') {
+            const { current: accountBalance, iso_currency_code: accountCurrencyCode } = externalAccount.balances
+            const externalAccountName = `${externalAccount.name} - ${accountCurrencyCode}`
+            const externalAccountExists = (
+              await query(
+                `SELECT accountId FROM account
+                WHERE account.userId = ${user.id} and
+                account.country = '${accountCurrencyCode}' and
+                account.name = '${externalAccountName}' and
+                account.type = '${AccountType.External}'`
+              )
+            ).length
 
-        for (const account of accounts) {
-          if (account.subtype === 'savings' || account.subtype == 'checking') {
-            const existingExternalAccount = await Account.findOne({
-              where: { name: account.name, user: user, type: AccountType.External },
-            })
-            if (!existingExternalAccount) {
-              // Create the external account
-              let { current: balance, iso_currency_code } = account.balances
+            if (!externalAccountExists) {
               await Account.insert({
-                name: `${account.name} - ${iso_currency_code}`,
-                country: iso_currency_code,
-                balance,
+                name: `${externalAccountName}`,
+                country: accountCurrencyCode,
+                balance: accountBalance,
                 user,
                 type: AccountType.External,
               })
 
-              // Create the internal account if needed
-              const existingInternalAccount = await query(
-                `SELECT accountId FROM account
-                WHERE account.userId = ${user.id} and
-                account.country = '${iso_currency_code}' and
-                account.type = '${AccountType.Internal}'`
-              )
-              if (existingInternalAccount.length == 0) {
+              const internalAccountExists = (
+                await query(
+                  `SELECT accountId FROM account
+                  WHERE account.userId = ${user.id} and
+                  account.country = '${accountCurrencyCode}' and
+                  account.type = '${AccountType.Internal}'`
+                )
+              ).length
+
+              if (!internalAccountExists) {
                 await Account.insert({
-                  country: iso_currency_code,
-                  name: `Multicurrency Account - ${iso_currency_code}`,
+                  country: accountCurrencyCode,
+                  name: `Multicurrency Account - ${accountCurrencyCode}`,
                   balance: 0,
                   user,
                   type: AccountType.Internal,
@@ -357,7 +368,7 @@ server.express.post('/getPlaidAccessToken', async (req, res) => {
       }
     }
   } catch (e) {
-    return res.send({ error: e.message })
+    return res.status(500).send({ error: e.message })
   }
   return res.sendStatus(200)
 })
