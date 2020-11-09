@@ -76,7 +76,22 @@ function TransferForm() {
   const [err, setError] = React.useState({ amount: false })
 
   async function transfer() {
+    if (fromAccountId === -1) {
+      toastErr('Please an account to transfer funds out of!')
+      return
+    }
+
+    if (toAccountId === -1) {
+      toastErr('Please an account to transfer funds into!')
+      return
+    }
+
     const amountToTransfer = parseFloat(amount)
+    if (amountToTransfer <= 0) {
+      toastErr('The amount to transfer must greater than 0!')
+      setError({ amount: true })
+      return
+    }
     fetch('/transferBalance', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -88,7 +103,7 @@ function TransferForm() {
         navigate(getPath(Route.PROFILE))
       })
       .catch(err => {
-        toastErr('Insufficient funds!')
+        toastErr('Cannot process transfer due to insufficient funds!')
         setError({ amount: true })
       })
   }
@@ -124,7 +139,7 @@ function TransferForm() {
           <SelectAccount handleChange={handleTransferFrom} isDisabled={false} userAccounts={userAccounts} />
         )}
       </div>
-      <Spacer $h2 />
+      <Spacer $h4 />
       <div>
         <label className="db fw4 lh-copy f6">Transfer To</label>
         {userAccounts && (
@@ -138,9 +153,10 @@ function TransferForm() {
         )}
         <div className="mt3">
           <label className="db fw4 lh-copy f6">Amount</label>
-          <Input $hasError={err.amount} $onChange={setAmount} name="amount" type="amount" />
+          <Input $hasError={err.amount} $onChange={setAmount} name="amount" />
         </div>
       </div>
+      <Spacer $h2 />
       <div className="mt3">
         <Button onClick={async () => await transfer()}>Transfer</Button>
       </div>

@@ -56,6 +56,8 @@ export function NavBar() {
           {/* {tabs.map((tab, i) => (
             <NavItem key={i} {...tab} />
           ))} */}
+          {isUserLoggedIn && <NavItem name="Profile" path={getPath(Route.PROFILE)} />}
+          {isUserLoggedIn && <NavItem name="Transfer Funds" path={getPath(Route.TRANSFER_BALANCE)} />}
           {isUserLoggedIn && <Logout />}
           {!isUserLoggedIn && <NavItem name="Log In" path={getPath(Route.LOGIN)} />}
           {!isUserLoggedIn && <NavItem name="Sign Up" path={getPath(Route.SIGNUP)} />}
