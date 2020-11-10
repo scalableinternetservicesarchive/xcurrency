@@ -1,10 +1,15 @@
+import { useQuery } from '@apollo/client'
 import { RouteComponentProps } from '@reach/router'
 import * as React from 'react'
+import { useContext } from 'react'
 import { ColorName, Colors } from '../../../../common/src/colors'
+import { FetchAccounts, FetchAccountsVariables } from '../../graphql/query.gen'
 import { H2 } from '../../style/header'
 import { Spacer } from '../../style/spacer'
 import { style } from '../../style/styled'
 import { BodyText, IntroText } from '../../style/text'
+import { fetchAccounts } from '../accounts/fetchAccounts'
+import { UserContext } from '../auth/user'
 import { AppRouteParams } from '../nav/route'
 import { toastErr } from '../toast/toast'
 import { Page } from './Page'
@@ -27,7 +32,6 @@ export function ProfilePage(props: ProfilePageProps) {
         toastErr('Could not retrieve Plaid link token!')
       })
   }
-
   return (
     <Page>
       <Section>
@@ -37,55 +41,94 @@ export function ProfilePage(props: ProfilePageProps) {
         <Spacer $h4 />
         <Table>
           <tbody>
-            <Name header="Name" name="Joe Bruin" />
-            <Id header="ID Number" id="1111" />
+            <Name
+              header="Name:"
+            />
+            <Id
+              header="ID Number:"
+            />
           </tbody>
         </Table>
-        <Spacer $h4 />
+        <Spacer $h6 />
         <IntroText>Accounts Information</IntroText>
         <Table>
           <tbody>
-            <Account country="Country" balance="Balance" />
-            <Account country="USA" balance="$30" />
-            <Account country="UK" balance="€30" />
+            <AccountHeader
+              country="Country"
+              balance="Balance"
+            />
+            <Accounts
+               num = {0}
+            />
+            <Accounts
+               num = {1}
+            />
+            <Accounts
+               num = {2}
+            />
+            <Accounts
+               num = {3}
+            />
+            <Accounts
+               num = {4}
+            />
+            <Accounts
+               num = {5}
+            />
+            <Accounts
+               num = {6}
+            />
+            <Accounts
+               num = {7}
+            />
+            <Accounts
+               num = {8}
+            />
+            <Accounts
+               num = {9}
+            />
+            <Accounts
+               num = {10}
+            />
           </tbody>
         </Table>
         <Spacer $h4 />
-        <IntroText>Other Balances Information</IntroText>
-        <Table>
-          <tbody>
-            <Transfer country="USA" amount="blah" />
-          </tbody>
-        </Table>
       </Section>
       <PlaidButton link_token={linkToken} />
     </Page>
   )
 }
 
-function Name(props: { header: string; name: string }) {
+function Name(props: {
+  header: string
+}) {
   return (
     <TR>
       <BodyText>
         <TD>{props.header}</TD>
-        <TD>{props.name}</TD>
+        <TD>{useContext(UserContext).displayName()}</TD>
       </BodyText>
     </TR>
   )
 }
 
-function Id(props: { header: string; id: string }) {
+function Id(props: {
+  header: string
+}) {
   return (
     <TR>
       <BodyText>
         <TD>{props.header}</TD>
-        <TD>{props.id}</TD>
+        <TD>{useContext(UserContext).displayId()}</TD>
       </BodyText>
     </TR>
   )
 }
 
-function Account(props: { country: string; balance: string }) {
+function AccountHeader(props: {
+  country: string
+  balance: string
+}) {
   return (
     <TR>
       <BodyText>
@@ -96,16 +139,37 @@ function Account(props: { country: string; balance: string }) {
   )
 }
 
-function Transfer(props: { country: string; amount: string }) {
-  return (
-    <TR>
+function Accounts(props: {num: number}) {
+  const user = useContext(UserContext).user
+  const { loading, data } = useQuery<FetchAccounts, FetchAccountsVariables>(fetchAccounts, {
+    variables: { id: user!.id },
+  })
+
+  if (loading) {
+    return <div>loading...</div>
+  }
+
+  const userAccounts = data?.user?.account!
+
+  var err:string = "No Accounts Linked";
+  if (userAccounts[props.num] ) {
+  return ( <TR>
       <BodyText>
-        <TD>{props.country}</TD>
-        <TD>{props.amount}</TD>
+        <TD>{userAccounts[props.num].country}</TD>
+        <TD>{userAccounts[props.num].balance}</TD>
       </BodyText>
-    </TR>
-  )
+    </TR> )
+  }
+  else if (props.num == 0) {
+  return ( <TR>
+    <BodyText>
+      <TD>{err}</TD>
+    </BodyText>
+  </TR> )
+  }
+  else { return (null) }
 }
+
 
 const Table = style('table', 'w-100 ba b--black')
 
@@ -117,3 +181,4 @@ const Section = style('div', 'mb4 mid-gray ba b--mid-gray br2 pa3', (p: { $color
 const TR = style('tr', 'ba b--black')
 
 const TD = style('td', 'mid-gray pa3 v-mid', { minWidth: '7em' })
+
