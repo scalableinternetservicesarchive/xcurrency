@@ -9,6 +9,12 @@ export class UserCtx {
   isLoggedIn() {
     return Boolean(this.user)
   }
+  displayName() {
+    return this.user?.name
+  }
+  displayId() {
+    return this.user?.id
+  }
 }
 
 export const UserContext = React.createContext<UserCtx>(new UserCtx(null))
