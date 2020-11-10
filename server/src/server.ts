@@ -139,8 +139,8 @@ async function executeExchange(currentRate : number, requesterUser: User, userAc
         if (match[0]) {
           //update admin account
           let adminUser = await User.findOne({where : { userType: UserType.Admin }});
-          let adminToAccount = await Account.findOne({where : { user : adminUser, country : exReqData.toCurrency }});
-          let adminFromAccount = await Account.findOne({ where : { user: adminUser, country : exReqData.fromCurrency }});
+          let adminToAccount = await Account.findOne({where : { user : adminUser, country : exReqData.toCurrency, type : AccountType.Internal }});
+          let adminFromAccount = await Account.findOne({ where : { user: adminUser, country : exReqData.fromCurrency, type : AccountType.Internal }});
           let exReq2 = await ExchangeRequest.findOne({ where : { requestId : match[0] } })
           let secondUser = await User.createQueryBuilder("user")
                                       .leftJoinAndSelect("user.exchangeRequest", "exchange_request")
@@ -150,11 +150,13 @@ async function executeExchange(currentRate : number, requesterUser: User, userAc
                                                   .leftJoinAndSelect("account.user", "user")
                                                   .where(" user.id = :uId" , { uId : secondUser?.id } )
                                                   .andWhere(" country = :fromCountry ", { fromCountry : exReq2?.fromCurrency })
+                                                  .andWhere("type = :accountType", { accountType : AccountType.Internal })
                                                   .getOne()
           let secondUserToAccount = await Account.createQueryBuilder("account")
                                                 .leftJoinAndSelect("account.user", "user")
                                                 .where(" user.id = :uId" , { uId : secondUser?.id } )
                                                 .andWhere(" country = :toCountry ", { toCountry : exReq2?.toCurrency } )
+                                                .andWhere("type = :accountType", { accountType : AccountType.Internal })
                                                 .getOne()
           if (adminToAccount){
             if (adminFromAccount) {
@@ -355,6 +357,7 @@ asyncRoute(async (req, res) => {
                                             .leftJoinAndSelect("account.user", "user")
                                             .where("user.id = :uId ", { uId : requesterUser.id })
                                             .andWhere("country = :fromCurrency", { fromCurrency : exReqData.fromCurrency })
+                                            .andWhere("type = :accountType", { accountType : AccountType.Internal })
                                             .getOne()
               if (userAccount){
                 if (Number(userAccount.balance) - Number(exReqData.amountPay) >= 0){
@@ -384,12 +387,14 @@ asyncRoute(async (req, res) => {
                                                   .leftJoinAndSelect("account.user", "user")
                                                   .where("user.id = :uId ", { uId : requesterUser.id })
                                                   .andWhere("country = :fromCurrency", { fromCurrency : exReqData.fromCurrency })
+                                                  .andWhere("type = :accountType", { accountType : AccountType.Internal })
                                                   .getOne()
                 if (userAccount){
                   let userToAccount = await Account.createQueryBuilder("account")
                                                     .leftJoinAndSelect("account.user", "user")
                                                     .where("user.id = :uId" , { uId : exReqData.userId } )
                                                     .andWhere("country = :toCurrency", { toCurrency : exReqData.toCurrency } )
+                                                    .andWhere("type = :accountType", { accountType : AccountType.Internal })
                                                     .getOne()
                     if (userToAccount){
                       await executeExchange(currentRate, requesterUser, userAccount, userToAccount, exReqData)
@@ -399,13 +404,6 @@ asyncRoute(async (req, res) => {
                       const accountId = await Account.insert({ country: exReqData.toCurrency, type: AccountType.Internal, balance: 0.00, user: requesterUser})
                       let newAccount = await Account.findOne({ where : {id : accountId.generatedMaps[0].id} })
                       if (newAccount) {
-                        if (requesterUser.account) {
-                          requesterUser.account.push(newAccount)
-                        }
-                        else {
-                          requesterUser.account = [newAccount]
-                        }
-                        await User.save(requesterUser)
                         await executeExchange(currentRate, requesterUser, userAccount, newAccount, exReqData)
                       }
                     }
