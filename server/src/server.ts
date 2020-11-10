@@ -159,8 +159,12 @@ async function executeExchange(
       if (match[0]) {
         //update admin account
         let adminUser = await User.findOne({ where: { userType: UserType.Admin } })
-        let adminToAccount = await Account.findOne({ where: { user: adminUser, country: exReqData.toCurrency } })
-        let adminFromAccount = await Account.findOne({ where: { user: adminUser, country: exReqData.fromCurrency } })
+        let adminToAccount = await Account.findOne({
+          where: { user: adminUser, country: exReqData.toCurrency, type: AccountType.Internal },
+        })
+        let adminFromAccount = await Account.findOne({
+          where: { user: adminUser, country: exReqData.fromCurrency, type: AccountType.Internal },
+        })
         let exReq2 = await ExchangeRequest.findOne({ where: { requestId: match[0] } })
         let secondUser = await User.createQueryBuilder('user')
           .leftJoinAndSelect('user.exchangeRequest', 'exchange_request')
@@ -170,11 +174,13 @@ async function executeExchange(
           .leftJoinAndSelect('account.user', 'user')
           .where(' user.id = :uId', { uId: secondUser?.id })
           .andWhere(' country = :fromCountry ', { fromCountry: exReq2?.fromCurrency })
+          .andWhere('type = :accountType', { accountType: AccountType.Internal })
           .getOne()
         let secondUserToAccount = await Account.createQueryBuilder('account')
           .leftJoinAndSelect('account.user', 'user')
           .where(' user.id = :uId', { uId: secondUser?.id })
           .andWhere(' country = :toCountry ', { toCountry: exReq2?.toCurrency })
+          .andWhere('type = :accountType', { accountType: AccountType.Internal })
           .getOne()
         if (adminToAccount) {
           if (adminFromAccount) {
@@ -226,15 +232,6 @@ async function executeExchange(
     }
   })
 } /*
-let exch = await ExchangeRequest.insert({ amountWant: exReqData.amountWant, amountPay: exReqData.amountPay, bidRate: exReqData.bidRate
-  , currentRate: 1, fromCurrency: exReqData.fromCurrency, toCurrency: exReqData.toCurrency, user: user })
-  const myRequest = await ExchangeRequest.findOne({ where : { requestId : exch.generatedMaps[0].requestId } })
-  if (myRequest) {
-    return myRequest
-  }
-  return null
-}
-*/ /*
 // test exchange request functionality
 server.express.get('/test-exchange', asyncRoute(async (req, res) => {
   //seed fake requests
@@ -313,8 +310,7 @@ server.express.get('/test-exchange', asyncRoute(async (req, res) => {
       }
       }
 } ))
-*/
-/*
+*/ /*
 async function createTempUser(email : string, name : string, country : string, balance : number ) {
 const user = await User.insert({ email : email, userType :  UserType.User, name : name, password: 'sokchetraeung',
 country : country, exchangeRequest : [] , account : [] })
@@ -353,7 +349,18 @@ async function createTempRequest(user : User, exReqData : exReq) {
     const requestId = await query(` SELECT LAST_INSERT_ID()`);
     console.log(requestId)
   //});
-  */ server.express.post(
+  */
+
+/*
+let exch = await ExchangeRequest.insert({ amountWant: exReqData.amountWant, amountPay: exReqData.amountPay, bidRate: exReqData.bidRate
+  , currentRate: 1, fromCurrency: exReqData.fromCurrency, toCurrency: exReqData.toCurrency, user: user })
+  const myRequest = await ExchangeRequest.findOne({ where : { requestId : exch.generatedMaps[0].requestId } })
+  if (myRequest) {
+    return myRequest
+  }
+  return null
+}
+*/ server.express.post(
   '/confirm-request',
   asyncRoute(async (req, res) => {
     //handle request
@@ -377,13 +384,14 @@ async function createTempRequest(user : User, exReqData : exReq) {
               .leftJoinAndSelect('account.user', 'user')
               .where('user.id = :uId ', { uId: requesterUser.id })
               .andWhere('country = :fromCurrency', { fromCurrency: exReqData.fromCurrency })
+              .andWhere('type = :accountType', { accountType: AccountType.Internal })
               .getOne()
             if (userAccount) {
               if (Number(userAccount.balance) - Number(exReqData.amountPay) >= 0) {
                 //check if userToAccount exists
                 //substract from account
                 userAccount.balance = Number(userAccount.balance) - Number(exReqData.amountPay)
-                await Account.save(userAccount)
+                Account.save(userAccount)
                 res.setHeader('Content-Type', 'application/json')
                 res.status(200).send(JSON.stringify({ success: 1, notEnoughMoney: 0, noAccount: 0 }))
               } else {
@@ -405,19 +413,20 @@ async function createTempRequest(user : User, exReqData : exReq) {
               .leftJoinAndSelect('account.user', 'user')
               .where('user.id = :uId ', { uId: requesterUser.id })
               .andWhere('country = :fromCurrency', { fromCurrency: exReqData.fromCurrency })
+              .andWhere('type = :accountType', { accountType: AccountType.Internal })
               .getOne()
             if (userAccount) {
               let userToAccount = await Account.createQueryBuilder('account')
                 .leftJoinAndSelect('account.user', 'user')
                 .where('user.id = :uId', { uId: exReqData.userId })
                 .andWhere('country = :toCurrency', { toCurrency: exReqData.toCurrency })
+                .andWhere('type = :accountType', { accountType: AccountType.Internal })
                 .getOne()
               if (userToAccount) {
                 await executeExchange(currentRate, requesterUser, userAccount, userToAccount, exReqData)
               } else {
                 //no userToAccount, create a new account to store desire money
                 const accountId = await Account.insert({
-                  name: `Multicurrency Account - ${exReqData.toCurrency}`,
                   country: exReqData.toCurrency,
                   type: AccountType.Internal,
                   balance: 0.0,
@@ -425,12 +434,6 @@ async function createTempRequest(user : User, exReqData : exReq) {
                 })
                 let newAccount = await Account.findOne({ where: { id: accountId.generatedMaps[0].id } })
                 if (newAccount) {
-                  if (requesterUser.account) {
-                    requesterUser.account.push(newAccount)
-                  } else {
-                    requesterUser.account = [newAccount]
-                  }
-                  await User.save(requesterUser)
                   await executeExchange(currentRate, requesterUser, userAccount, newAccount, exReqData)
                 }
               }

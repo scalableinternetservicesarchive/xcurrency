@@ -137,9 +137,14 @@ function TransferForm() {
   }
 
   const user = useContext(UserContext).user
-  const { data } = useQuery<FetchAccounts, FetchAccountsVariables>(fetchAccounts, {
+  const { loading, data } = useQuery<FetchAccounts, FetchAccountsVariables>(fetchAccounts, {
     variables: { id: user!.id },
   })
+
+  if (loading) {
+    return <div>loading...</div>
+  }
+
   const userAccounts = data?.user?.account!
 
   return (
