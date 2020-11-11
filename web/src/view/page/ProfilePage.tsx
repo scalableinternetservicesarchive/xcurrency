@@ -54,7 +54,7 @@ export function ProfilePage(props: ProfilePageProps) {
         <Table>
           <tbody>
             <AccountHeader
-              country="Country"
+              name="Account Name"
               balance="Balance"
             />
             <Accounts
@@ -126,13 +126,13 @@ function Id(props: {
 }
 
 function AccountHeader(props: {
-  country: string
+  name: string
   balance: string
 }) {
   return (
     <TR>
       <BodyText>
-        <TD>{props.country}</TD>
+        <TD>{props.name}</TD>
         <TD>{props.balance}</TD>
       </BodyText>
     </TR>
@@ -155,7 +155,7 @@ function Accounts(props: {num: number}) {
   if (userAccounts[props.num] ) {
   return ( <TR>
       <BodyText>
-        <TD>{userAccounts[props.num].country}</TD>
+        <TD>{userAccounts[props.num].name}</TD>
         <TD>{userAccounts[props.num].balance}</TD>
       </BodyText>
     </TR> )
