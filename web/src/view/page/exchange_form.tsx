@@ -52,6 +52,7 @@ function Exchange() {
     console.log({fromCurrency})
     console.log({toCurrency})
     setDisplayValue(value);
+    setDisplayFetch('')
   }
 
  async function submitRequest() {

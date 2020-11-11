@@ -33,6 +33,15 @@ import { AccountType, UserType } from './graphql/schema.types'
 import { expressLambdaProxy } from './lambda/handler'
 import { renderApp } from './render'
 
+//maximum amount of divation of a curreny in a single transaction.
+let moneyDeviationPara = new Map();
+moneyDeviationPara.set('USD',20);
+moneyDeviationPara.set('CAD',26);
+moneyDeviationPara.set('JPY',2100);
+moneyDeviationPara.set('BRL',110);
+moneyDeviationPara.set('INR',1500);
+moneyDeviationPara.set('CNY',130);
+
 const plaid = require('plaid')
 
 const plaidClient = new plaid.Client({
@@ -154,6 +163,10 @@ async function executeExchange(
         .where('fromCurrency = :requestToCountry', { requestToCountry: exReqData.toCurrency })
         .andWhere('toCurrency = :requestFromCurrency', { requestFromCurrency: exReqData.fromCurrency })
         .andWhere('bidRate <= :requestBidRate', { requestBidRate: requestbidrate })
+        .andWhere("amountPay <= :discrepency", { discrepency : Number(Number(moneyDeviationPara.get(exReqData.toCurrency)) + Number(exReqData.amountWant))})
+        .andWhere("amountPay >= :discrepency1", { discrepency1 : Number(Number(exReqData.amountWant) - Number(moneyDeviationPara.get(exReqData.toCurrency)))})
+        .andWhere("amountWant <= :discrepency2", { discrepency2 : Number(Number(moneyDeviationPara.get(exReqData.fromCurrency)) + Number(exReqData.amountPay))})
+        .andWhere("amountWant >= :discrepency3", { discrepency3 : Number(Number(exReqData.amountPay) - Number(moneyDeviationPara.get(exReqData.fromCurrency)))})
         .getMany()
       const match = await checkForMatch(exReqData, exchangeRequests)
       if (match[0]) {
