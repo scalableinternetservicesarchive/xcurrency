@@ -56,6 +56,23 @@ export interface FetchAccountVariables {
 // This file was automatically generated and should not be edited.
 
 // ====================================================
+// GraphQL mutation operation: CreateAccount
+// ====================================================
+
+export interface CreateAccount {
+  createAccount: boolean;
+}
+
+export interface CreateAccountVariables {
+  input: AccountInfo;
+}
+
+/* tslint:disable */
+/* eslint-disable */
+// @generated
+// This file was automatically generated and should not be edited.
+
+// ====================================================
 // GraphQL mutation operation: ModifyAccountBalance
 // ====================================================
 
@@ -318,9 +335,22 @@ export interface SurveyQuestion {
 // START Enums and Input Objects
 //==============================================================
 
+export enum AccountType {
+  EXTERNAL = "EXTERNAL",
+  INTERNAL = "INTERNAL",
+}
+
 export enum UserType {
   ADMIN = "ADMIN",
   USER = "USER",
+}
+
+export interface AccountInfo {
+  country: string;
+  type: AccountType;
+  balance: number;
+  name: string;
+  userId: number;
 }
 
 export interface AccountInput {

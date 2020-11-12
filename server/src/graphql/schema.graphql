@@ -40,6 +40,8 @@ type Mutation {
 
   # Update account balance
   updateBalance(input: AccountInput!): Boolean!
+
+  createAccount(input: AccountInfo!): Boolean!
 }
 
 type Subscription {
@@ -61,6 +63,14 @@ type Account {
   balance: Float!
   name: String
   user: User!
+}
+
+input AccountInfo {
+  country: String!
+  type: AccountType!
+  balance: Float!
+  name: String!
+  userId: Int!
 }
 
 #might need ID for each user later.

@@ -41,55 +41,26 @@ export function ProfilePage(props: ProfilePageProps) {
         <Spacer $h4 />
         <Table>
           <tbody>
-            <Name
-              header="Name:"
-            />
-            <Id
-              header="ID Number:"
-            />
+            <Name header="Name:" />
+            <Id header="ID Number:" />
           </tbody>
         </Table>
         <Spacer $h6 />
         <IntroText>Accounts Information</IntroText>
         <Table>
           <tbody>
-            <AccountHeader
-              name="Account Name"
-              balance="Balance"
-            />
-            <Accounts
-               num = {0}
-            />
-            <Accounts
-               num = {1}
-            />
-            <Accounts
-               num = {2}
-            />
-            <Accounts
-               num = {3}
-            />
-            <Accounts
-               num = {4}
-            />
-            <Accounts
-               num = {5}
-            />
-            <Accounts
-               num = {6}
-            />
-            <Accounts
-               num = {7}
-            />
-            <Accounts
-               num = {8}
-            />
-            <Accounts
-               num = {9}
-            />
-            <Accounts
-               num = {10}
-            />
+            <AccountHeader name="Account Name" balance="Balance" />
+            <Accounts num={0} />
+            <Accounts num={1} />
+            <Accounts num={2} />
+            <Accounts num={3} />
+            <Accounts num={4} />
+            <Accounts num={5} />
+            <Accounts num={6} />
+            <Accounts num={7} />
+            <Accounts num={8} />
+            <Accounts num={9} />
+            <Accounts num={10} />
           </tbody>
         </Table>
         <Spacer $h4 />
@@ -99,9 +70,7 @@ export function ProfilePage(props: ProfilePageProps) {
   )
 }
 
-function Name(props: {
-  header: string
-}) {
+function Name(props: { header: string }) {
   return (
     <TR>
       <BodyText>
@@ -112,9 +81,7 @@ function Name(props: {
   )
 }
 
-function Id(props: {
-  header: string
-}) {
+function Id(props: { header: string }) {
   return (
     <TR>
       <BodyText>
@@ -125,10 +92,7 @@ function Id(props: {
   )
 }
 
-function AccountHeader(props: {
-  name: string
-  balance: string
-}) {
+function AccountHeader(props: { name: string; balance: string }) {
   return (
     <TR>
       <BodyText>
@@ -139,7 +103,7 @@ function AccountHeader(props: {
   )
 }
 
-function Accounts(props: {num: number}) {
+function Accounts(props: { num: number }) {
   const user = useContext(UserContext).user
   const { loading, data } = useQuery<FetchAccounts, FetchAccountsVariables>(fetchAccounts, {
     variables: { id: user!.id },
@@ -151,25 +115,28 @@ function Accounts(props: {num: number}) {
 
   const userAccounts = data?.user?.account!
 
-  var err:string = "No Accounts Linked";
-  if (userAccounts[props.num] ) {
-  return ( <TR>
-      <BodyText>
-        <TD>{userAccounts[props.num].name}</TD>
-        <TD>{userAccounts[props.num].balance}</TD>
-      </BodyText>
-    </TR> )
+  var err: string = 'No Accounts Linked'
+  if (userAccounts[props.num]) {
+    return (
+      <TR>
+        <BodyText>
+          <TD>{userAccounts[props.num].name}</TD>
+          <TD>{userAccounts[props.num].balance}</TD>
+        </BodyText>
+      </TR>
+    )
+  } else if (props.num == 0) {
+    return (
+      <TR>
+        <BodyText>
+          <TD>{err}</TD>
+        </BodyText>
+      </TR>
+    )
+  } else {
+    return null
   }
-  else if (props.num == 0) {
-  return ( <TR>
-    <BodyText>
-      <TD>{err}</TD>
-    </BodyText>
-  </TR> )
-  }
-  else { return (null) }
 }
-
 
 const Table = style('table', 'w-100 ba b--black')
 
@@ -181,4 +148,3 @@ const Section = style('div', 'mb4 mid-gray ba b--mid-gray br2 pa3', (p: { $color
 const TR = style('tr', 'ba b--black')
 
 const TD = style('td', 'mid-gray pa3 v-mid', { minWidth: '7em' })
-

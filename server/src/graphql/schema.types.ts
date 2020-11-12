@@ -40,6 +40,7 @@ export interface Mutation {
   nextSurveyQuestion?: Maybe<Survey>
   recordRequest: Scalars['Boolean']
   updateBalance: Scalars['Boolean']
+  createAccount: Scalars['Boolean']
 }
 
 export interface MutationAnswerSurveyArgs {
@@ -56,6 +57,10 @@ export interface MutationRecordRequestArgs {
 
 export interface MutationUpdateBalanceArgs {
   input: AccountInput
+}
+
+export interface MutationCreateAccountArgs {
+  input: AccountInfo
 }
 
 export interface Subscription {
@@ -84,6 +89,14 @@ export interface Account {
   balance: Scalars['Float']
   name?: Maybe<Scalars['String']>
   user: User
+}
+
+export interface AccountInfo {
+  country: Scalars['String']
+  type: AccountType
+  balance: Scalars['Float']
+  name: Scalars['String']
+  userId: Scalars['Int']
 }
 
 export interface ExchangeRequest {
@@ -239,6 +252,7 @@ export type ResolversTypes = {
   String: ResolverTypeWrapper<Scalars['String']>
   Account: ResolverTypeWrapper<Account>
   Float: ResolverTypeWrapper<Scalars['Float']>
+  AccountInfo: AccountInfo
   ExchangeRequest: ResolverTypeWrapper<ExchangeRequest>
   UserType: UserType
   Survey: ResolverTypeWrapper<Survey>
@@ -261,6 +275,7 @@ export type ResolversParentTypes = {
   String: Scalars['String']
   Account: Account
   Float: Scalars['Float']
+  AccountInfo: AccountInfo
   ExchangeRequest: ExchangeRequest
   Survey: Survey
   SurveyQuestion: SurveyQuestion
@@ -314,6 +329,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationUpdateBalanceArgs, 'input'>
+  >
+  createAccount?: Resolver<
+    ResolversTypes['Boolean'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateAccountArgs, 'input'>
   >
 }
 

@@ -68,6 +68,11 @@ export const graphqlRoot: Resolvers<Context> = {
       await account.save()
       return true
     },
+    createAccount: async (_, { input }) => {
+      const { country, type, balance, name, userId } = input
+      await Account.insert({ country, type, balance, name, userId })
+      return true
+    },
   },
   Subscription: {
     surveyUpdates: {

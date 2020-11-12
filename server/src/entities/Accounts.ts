@@ -43,4 +43,7 @@ export class Account extends BaseEntity {
 
   @ManyToOne(() => User, user => user.account)
   user: User
+
+  @Column()
+  userId: number
 }
