@@ -108,6 +108,7 @@ function TransferForm() {
         check(res.status === 200)
         alert('Transfer successful!')
         navigate(getPath(Route.PROFILE))
+        window.location.reload()
       })
       .catch(err => {
         toastErr('Cannot process transfer due to insufficient funds!')

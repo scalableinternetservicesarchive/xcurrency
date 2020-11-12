@@ -440,6 +440,7 @@ let exch = await ExchangeRequest.insert({ amountWant: exReqData.amountWant, amou
               } else {
                 //no userToAccount, create a new account to store desire money
                 const accountId = await Account.insert({
+                  name: `Multicurrency Account - ${exReqData.toCurrency}`,
                   country: exReqData.toCurrency,
                   type: AccountType.Internal,
                   balance: 0.0,
