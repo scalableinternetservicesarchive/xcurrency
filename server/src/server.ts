@@ -642,6 +642,18 @@ server.express.post('/getPlaidLinkToken', async (req: any, res) => {
   }
 })
 
+server.express.get('/requests', async (req: any, res) => {
+  const authToken = req.cookies.authToken || req.header('x-authtoken')
+  if (authToken) {
+    const session = await Session.findOne({ where: { authToken }, relations: ['user'] })
+    if (session) {
+      const clientUser = session.user
+      const requests = await ExchangeRequest.find({ where: { user: clientUser } })
+      res.status(200).type('json').send(requests)
+    }
+  }
+})
+
 /*
  * Links an external bank institution with Plaid, creating any necessary
  * external accounts and internal multicurrency accounts
