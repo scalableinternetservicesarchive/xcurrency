@@ -1,5 +1,5 @@
 require('honeycomb-beeline')({
-  writeKey: process.env.HONEYCOMB_KEY || 'd29d5f5ec24178320dae437383480737',
+  writeKey: process.env.HONEYCOMB_KEY || '3ebf1b9f559d527d8eb3b0e08d859a8e',
   dataset: process.env.APP_NAME || 'bespin',
   serviceName: process.env.APPSERVER_TAG || 'local',
   enabledInstrumentations: ['express', 'mysql2', 'react-dom/server'],
@@ -664,8 +664,7 @@ server.express.get('/requests', async (req: any, res) => {
 })
 
 /*
- * Links an external bank institution with Plaid, creating any necessary
- * external accounts and internal multicurrency accounts
+ * Links an external bank institution with Plaid,
  */
 server.express.post('/getExternalAccounts', async (req, res) => {
   try {
@@ -693,6 +692,9 @@ server.express.post('/getExternalAccounts', async (req, res) => {
   return res.sendStatus(200)
 })
 
+/**
+ * Creates internal multicurrency and external accounts given accounts from a bank institution
+ */
 server.express.post('/createAccounts', async (req, res) => {
   const externalAccounts = req.body.accounts
   const authToken = req.cookies.authToken || req.header('x-authtoken')
