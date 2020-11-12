@@ -34,13 +34,13 @@ import { expressLambdaProxy } from './lambda/handler'
 import { renderApp } from './render'
 
 //maximum amount of divation of a curreny in a single transaction.
-let moneyDeviationPara = new Map();
-moneyDeviationPara.set('USD',20);
-moneyDeviationPara.set('CAD',26);
-moneyDeviationPara.set('JPY',2100);
-moneyDeviationPara.set('BRL',110);
-moneyDeviationPara.set('INR',1500);
-moneyDeviationPara.set('CNY',130);
+let moneyDeviationPara = new Map()
+moneyDeviationPara.set('USD', 20)
+moneyDeviationPara.set('CAD', 26)
+moneyDeviationPara.set('JPY', 2100)
+moneyDeviationPara.set('BRL', 110)
+moneyDeviationPara.set('INR', 1500)
+moneyDeviationPara.set('CNY', 130)
 
 const plaid = require('plaid')
 
@@ -100,7 +100,7 @@ server.express.post(
     res
       .status(200)
       .cookie('authToken', authToken, { maxAge: SESSION_DURATION, path: '/', httpOnly: true, secure: Config.isProd })
-      .send('Success!')
+      .send({ authToken })
   })
 )
 
@@ -163,10 +163,18 @@ async function executeExchange(
         .where('fromCurrency = :requestToCountry', { requestToCountry: exReqData.toCurrency })
         .andWhere('toCurrency = :requestFromCurrency', { requestFromCurrency: exReqData.fromCurrency })
         .andWhere('bidRate <= :requestBidRate', { requestBidRate: requestbidrate })
-        .andWhere("amountPay <= :discrepency", { discrepency : Number(Number(moneyDeviationPara.get(exReqData.toCurrency)) + Number(exReqData.amountWant))})
-        .andWhere("amountPay >= :discrepency1", { discrepency1 : Number(Number(exReqData.amountWant) - Number(moneyDeviationPara.get(exReqData.toCurrency)))})
-        .andWhere("amountWant <= :discrepency2", { discrepency2 : Number(Number(moneyDeviationPara.get(exReqData.fromCurrency)) + Number(exReqData.amountPay))})
-        .andWhere("amountWant >= :discrepency3", { discrepency3 : Number(Number(exReqData.amountPay) - Number(moneyDeviationPara.get(exReqData.fromCurrency)))})
+        .andWhere('amountPay <= :discrepency', {
+          discrepency: Number(Number(moneyDeviationPara.get(exReqData.toCurrency)) + Number(exReqData.amountWant)),
+        })
+        .andWhere('amountPay >= :discrepency1', {
+          discrepency1: Number(Number(exReqData.amountWant) - Number(moneyDeviationPara.get(exReqData.toCurrency))),
+        })
+        .andWhere('amountWant <= :discrepency2', {
+          discrepency2: Number(Number(moneyDeviationPara.get(exReqData.fromCurrency)) + Number(exReqData.amountPay)),
+        })
+        .andWhere('amountWant >= :discrepency3', {
+          discrepency3: Number(Number(exReqData.amountPay) - Number(moneyDeviationPara.get(exReqData.fromCurrency))),
+        })
         .getMany()
       const match = await checkForMatch(exReqData, exchangeRequests)
       if (match[0]) {
@@ -659,7 +667,7 @@ server.express.get('/requests', async (req: any, res) => {
  * Links an external bank institution with Plaid, creating any necessary
  * external accounts and internal multicurrency accounts
  */
-server.express.post('/getPlaidAccessToken', async (req, res) => {
+server.express.post('/getExternalAccounts', async (req, res) => {
   try {
     const publicToken = req.body.public_token
     // Exchange the client-side public_token for a server access_token
@@ -675,58 +683,71 @@ server.express.post('/getPlaidAccessToken', async (req, res) => {
         const user = session.user
         user.plaidAccessToken = accessToken
         await user.save()
-
-        const { accounts: externalAccounts } = await plaidClient.getAccounts(accessToken)
-        for (const externalAccount of externalAccounts) {
-          if (externalAccount.subtype === 'savings' || externalAccount.subtype == 'checking') {
-            const { current: accountBalance, iso_currency_code: accountCurrencyCode } = externalAccount.balances
-            const externalAccountName = `${externalAccount.name} - ${accountCurrencyCode}`
-            const externalAccountExists = (
-              await query(
-                `SELECT id FROM account
-                WHERE account.userId = ${user.id} and
-                account.country = '${accountCurrencyCode}' and
-                account.name = '${externalAccountName}' and
-                account.type = '${AccountType.External}'`
-              )
-            ).length
-
-            if (!externalAccountExists) {
-              await Account.insert({
-                name: `${externalAccountName}`,
-                country: accountCurrencyCode,
-                balance: accountBalance,
-                user,
-                type: AccountType.External,
-              })
-
-              const internalAccountExists = (
-                await query(
-                  `SELECT id FROM account
-                  WHERE account.userId = ${user.id} and
-                  account.country = '${accountCurrencyCode}' and
-                  account.type = '${AccountType.Internal}'`
-                )
-              ).length
-
-              if (!internalAccountExists) {
-                await Account.insert({
-                  country: accountCurrencyCode,
-                  name: `Multicurrency Account - ${accountCurrencyCode}`,
-                  balance: 0,
-                  user,
-                  type: AccountType.Internal,
-                })
-              }
-            }
-          }
-        }
+        const { accounts } = await plaidClient.getAccounts(accessToken)
+        return res.status(200).send(accounts)
       }
     }
   } catch (e) {
     return res.status(500).send({ error: e.message })
   }
   return res.sendStatus(200)
+})
+
+server.express.post('/createAccounts', async (req, res) => {
+  const externalAccounts = req.body.accounts
+  const authToken = req.cookies.authToken || req.header('x-authtoken')
+  if (authToken) {
+    const session = await Session.findOne({ where: { authToken }, relations: ['user'] })
+    if (session) {
+      for (const externalAccount of externalAccounts) {
+        if (externalAccount.subtype === 'savings' || externalAccount.subtype == 'checking') {
+          const { current: accountBalance, iso_currency_code: accountCurrencyCode } = externalAccount.balances
+          const externalAccountName = `${externalAccount.name} - ${accountCurrencyCode}`
+          const user = session.user
+          const externalAccountExists = (
+            await query(
+              `SELECT id FROM account
+                WHERE account.userId = ${user.id} and
+                account.country = '${accountCurrencyCode}' and
+                account.name = '${externalAccountName}' and
+                account.type = '${AccountType.External}'`
+            )
+          ).length
+
+          if (!externalAccountExists) {
+            await Account.insert({
+              name: `${externalAccountName}`,
+              country: accountCurrencyCode,
+              balance: accountBalance,
+              user,
+              type: AccountType.External,
+            })
+
+            const internalAccountExists = (
+              await query(
+                `SELECT id FROM account
+                  WHERE account.userId = ${user.id} and
+                  account.country = '${accountCurrencyCode}' and
+                  account.type = '${AccountType.Internal}'`
+              )
+            ).length
+
+            if (!internalAccountExists) {
+              await Account.insert({
+                country: accountCurrencyCode,
+                name: `Multicurrency Account - ${accountCurrencyCode}`,
+                balance: 0,
+                user,
+                type: AccountType.Internal,
+              })
+            }
+          }
+        }
+      }
+      return res.sendStatus(200)
+    }
+  }
+  return res.status(500).send({ error: 'Could not add the linked accounts!' })
 })
 
 server.express.post('/transferBalance', async (req, res) => {
