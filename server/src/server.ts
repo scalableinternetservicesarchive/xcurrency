@@ -381,6 +381,7 @@ let exch = await ExchangeRequest.insert({ amountWant: exReqData.amountWant, amou
     const { amountWant, amountPay, bidRate, currentRate, fromCurrency, toCurrency } = req.body
     console.log(currentRate)
     const authToken = req.cookies.authToken
+    let paid = false;
     if (authToken) {
       //console.log(authToken)
       const session = await Session.findOne({ where: { authToken }, relations: ['user'] })
@@ -405,6 +406,7 @@ let exch = await ExchangeRequest.insert({ amountWant: exReqData.amountWant, amou
                 //substract from account
                 userAccount.balance = Number(userAccount.balance) - Number(exReqData.amountPay)
                 Account.save(userAccount)
+                paid = true
                 res.setHeader('Content-Type', 'application/json')
                 res.status(200).send(JSON.stringify({ success: 1, notEnoughMoney: 0, noAccount: 0 }))
               } else {
@@ -421,7 +423,7 @@ let exch = await ExchangeRequest.insert({ amountWant: exReqData.amountWant, amou
         // check for match and perform transaction
         await transaction(async () => {
           let requesterUser = await User.findOne({ where: { id: exReqData.userId } })
-          if (requesterUser) {
+          if (requesterUser && paid) {
             let userAccount = await Account.createQueryBuilder('account')
               .leftJoinAndSelect('account.user', 'user')
               .where('user.id = :uId ', { uId: requesterUser.id })
