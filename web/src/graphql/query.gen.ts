@@ -279,6 +279,23 @@ export interface NextSurveyQuestionVariables {
 // This file was automatically generated and should not be edited.
 
 // ====================================================
+// GraphQL mutation operation: CreateUser
+// ====================================================
+
+export interface CreateUser {
+  createUser: number;
+}
+
+export interface CreateUserVariables {
+  input: UserInput;
+}
+
+/* tslint:disable */
+/* eslint-disable */
+// @generated
+// This file was automatically generated and should not be edited.
+
+// ====================================================
 // GraphQL fragment: Survey
 // ====================================================
 
@@ -361,6 +378,13 @@ export interface AccountInput {
 export interface SurveyInput {
   questionId: number;
   answer: string;
+}
+
+export interface UserInput {
+  userType: UserType;
+  email: string;
+  name: string;
+  password: string;
 }
 
 //==============================================================

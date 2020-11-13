@@ -41,6 +41,7 @@ export interface Mutation {
   recordRequest: Scalars['Boolean']
   updateBalance: Scalars['Boolean']
   createAccount: Scalars['Boolean']
+  createUser: Scalars['Int']
 }
 
 export interface MutationAnswerSurveyArgs {
@@ -61,6 +62,10 @@ export interface MutationUpdateBalanceArgs {
 
 export interface MutationCreateAccountArgs {
   input: AccountInfo
+}
+
+export interface MutationCreateUserArgs {
+  input: UserInput
 }
 
 export interface Subscription {
@@ -149,6 +154,13 @@ export interface SurveyInput {
 export interface AccountInput {
   id: Scalars['Int']
   balance: Scalars['Float']
+}
+
+export interface UserInput {
+  userType: UserType
+  email: Scalars['String']
+  name: Scalars['String']
+  password: Scalars['String']
 }
 
 export interface ExchangeRequestInput {
@@ -260,6 +272,7 @@ export type ResolversTypes = {
   SurveyAnswer: ResolverTypeWrapper<SurveyAnswer>
   SurveyInput: SurveyInput
   AccountInput: AccountInput
+  UserInput: UserInput
   ExchangeRequestInput: ExchangeRequestInput
   AccountType: AccountType
 }
@@ -282,6 +295,7 @@ export type ResolversParentTypes = {
   SurveyAnswer: SurveyAnswer
   SurveyInput: SurveyInput
   AccountInput: AccountInput
+  UserInput: UserInput
   ExchangeRequestInput: ExchangeRequestInput
 }
 
@@ -336,6 +350,7 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationCreateAccountArgs, 'input'>
   >
+  createUser?: Resolver<ResolversTypes['Int'], ParentType, ContextType, RequireFields<MutationCreateUserArgs, 'input'>>
 }
 
 export type SubscriptionResolvers<

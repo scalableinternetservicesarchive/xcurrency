@@ -42,6 +42,8 @@ type Mutation {
   updateBalance(input: AccountInput!): Boolean!
 
   createAccount(input: AccountInfo!): Boolean!
+
+  createUser(input: UserInput!): Int!
 }
 
 type Subscription {
@@ -147,6 +149,13 @@ input SurveyInput {
 input AccountInput {
   id: Int!
   balance: Float!
+}
+
+input UserInput {
+  userType: UserType!
+  email: String!
+  name: String!
+  password: String!
 }
 
 input ExchangeRequestInput {

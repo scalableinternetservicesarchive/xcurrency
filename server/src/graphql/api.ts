@@ -1,3 +1,4 @@
+import * as bcrypt from 'bcryptjs'
 import { readFileSync } from 'fs'
 import { PubSub } from 'graphql-yoga'
 import path from 'path'
@@ -72,6 +73,13 @@ export const graphqlRoot: Resolvers<Context> = {
       const { country, type, balance, name, userId } = input
       await Account.insert({ country, type, balance, name, userId })
       return true
+    },
+    createUser: async (_, { input }) => {
+      const { userType, email, name, password } = input
+      const saltRounds = 10
+      const hashedPassword = await bcrypt.hash(password, saltRounds)
+      const user = await User.insert({ userType, email, name, password: hashedPassword })
+      return user.identifiers[0].id
     },
   },
   Subscription: {
