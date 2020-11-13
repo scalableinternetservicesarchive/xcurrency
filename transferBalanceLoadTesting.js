@@ -37,7 +37,7 @@ export default function () {
   // const res = http.get('http://localhost:3000')
   const res = http.post(
     'http://localhost:3000/graphql',
-    '{"operationName":"CreateUser","variables":{"input":{"email":"testEmail@gmail.com","name":"First Last","password":"testPass","userType":"ADMIN"}},"query":"mutation CreateUser($input: UserInput!){\n  createUser(input: $input)\n}\n"}',
+    '{"operationName":"CreateUser","variables":{"input":{"email":"testEmail@gmail.com","name":"First Last","password":"testPass","userType":"ADMIN"}},"query":"mutation CreateUser($input: UserInput!){\ncreateUser(input: $input)\n}\n"}',
     {
       headers: {
         'Content-Type': 'application/json',
