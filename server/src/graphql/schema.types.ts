@@ -20,6 +20,8 @@ export interface Query {
   accounts?: Maybe<Array<Maybe<Account>>>
   account?: Maybe<Account>
   survey?: Maybe<Survey>
+  exchangeRequests?: Maybe<Array<Maybe<ExchangeRequest>>>
+  exchangeRequest?: Maybe<ExchangeRequest>
 }
 
 export interface QueryUserArgs {
@@ -34,11 +36,19 @@ export interface QuerySurveyArgs {
   surveyId: Scalars['Int']
 }
 
+export interface QueryExchangeRequestsArgs {
+  id?: Maybe<Scalars['Int']>
+}
+
+export interface QueryExchangeRequestArgs {
+  id?: Maybe<Scalars['Int']>
+}
+
 export interface Mutation {
   __typename?: 'Mutation'
   answerSurvey: Scalars['Boolean']
   nextSurveyQuestion?: Maybe<Survey>
-  recordRequest: Scalars['Boolean']
+  createRequest: Scalars['Boolean']
   updateBalance: Scalars['Boolean']
   createAccount: Scalars['Boolean']
   createUser: Scalars['Int']
@@ -52,7 +62,7 @@ export interface MutationNextSurveyQuestionArgs {
   surveyId: Scalars['Int']
 }
 
-export interface MutationRecordRequestArgs {
+export interface MutationCreateRequestArgs {
   input: ExchangeRequestInput
 }
 
@@ -164,7 +174,6 @@ export interface UserInput {
 }
 
 export interface ExchangeRequestInput {
-  requestId: Scalars['Int']
   amountWant: Scalars['Float']
   bidRate: Scalars['Float']
   amountPay: Scalars['Float']
@@ -314,6 +323,18 @@ export type QueryResolvers<
     ContextType,
     RequireFields<QuerySurveyArgs, 'surveyId'>
   >
+  exchangeRequests?: Resolver<
+    Maybe<Array<Maybe<ResolversTypes['ExchangeRequest']>>>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryExchangeRequestsArgs, never>
+  >
+  exchangeRequest?: Resolver<
+    Maybe<ResolversTypes['ExchangeRequest']>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryExchangeRequestArgs, never>
+  >
 }
 
 export type MutationResolvers<
@@ -332,11 +353,11 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationNextSurveyQuestionArgs, 'surveyId'>
   >
-  recordRequest?: Resolver<
+  createRequest?: Resolver<
     ResolversTypes['Boolean'],
     ParentType,
     ContextType,
-    RequireFields<MutationRecordRequestArgs, 'input'>
+    RequireFields<MutationCreateRequestArgs, 'input'>
   >
   updateBalance?: Resolver<
     ResolversTypes['Boolean'],

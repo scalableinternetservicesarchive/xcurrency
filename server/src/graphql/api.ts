@@ -4,6 +4,7 @@ import { PubSub } from 'graphql-yoga'
 import path from 'path'
 import { check } from '../../../common/src/util'
 import { Account } from '../entities/Accounts'
+import { ExchangeRequest } from '../entities/ExchangeRequest'
 import { Survey } from '../entities/Survey'
 import { SurveyAnswer } from '../entities/SurveyAnswer'
 import { SurveyQuestion } from '../entities/SurveyQuestion'
@@ -37,6 +38,12 @@ export const graphqlRoot: Resolvers<Context> = {
     account: async (_, { id }) => {
       const account = await Account.findOne({ where: { id } })
       return account || null
+    },
+    exchangeRequests: async (_, { id }) => {
+      const exchangeRequests = await ExchangeRequest.createQueryBuilder('exchange_request').leftJoinAndSelect('exchange_request.user', 'user')
+                                                    .where('user.id = :uId', { uId : id } )
+                                                    .getMany()
+      return exchangeRequests || null
     },
   },
   Mutation: {
@@ -80,6 +87,12 @@ export const graphqlRoot: Resolvers<Context> = {
       const hashedPassword = await bcrypt.hash(password, saltRounds)
       const user = await User.insert({ userType, email, name, password: hashedPassword })
       return user.identifiers[0].id
+    },
+    createRequest: async (_, { input }) => {
+      const {amountWant, bidRate, amountPay, currentRate,fromCurrency, toCurrency } = input
+      await ExchangeRequest.insert({ amountWant: amountWant, amountPay: amountPay, bidRate: bidRate, currentRate: currentRate,
+      fromCurrency: fromCurrency, toCurrency: toCurrency })
+      return true
     },
   },
   Subscription: {

@@ -23,7 +23,8 @@ type Query {
   account(id: Int!): Account
 
   survey(surveyId: Int!): Survey
-
+  exchangeRequests(id: Int): [ExchangeRequest]
+  exchangeRequest(id: Int): ExchangeRequest
   #exchangeReqest (requestID: Int!): ExchangeRequest
   #exchangeRequests: [ExchangeRequest!]!
 }
@@ -35,8 +36,8 @@ type Mutation {
   # Moves the survey to the next question (or starts it if it hasn't started). ADMIN only.
   nextSurveyQuestion(surveyId: Int!): Survey
 
-  #Records an request to a database
-  recordRequest(input: ExchangeRequestInput!): Boolean!
+  #create an request for currency exchange
+  createRequest(input: ExchangeRequestInput!): Boolean!
 
   # Update account balance
   updateBalance(input: AccountInput!): Boolean!
@@ -44,6 +45,8 @@ type Mutation {
   createAccount(input: AccountInfo!): Boolean!
 
   createUser(input: UserInput!): Int!
+
+
 }
 
 type Subscription {
@@ -159,7 +162,6 @@ input UserInput {
 }
 
 input ExchangeRequestInput {
-  requestId: Int!
   amountWant: Float!
   bidRate: Float!
   amountPay: Float!

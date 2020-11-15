@@ -110,6 +110,51 @@ export interface FetchUserContext {
 // This file was automatically generated and should not be edited.
 
 // ====================================================
+// GraphQL query operation: FetchExchangeRequests
+// ====================================================
+
+export interface FetchExchangeRequests_exchangeRequests {
+  __typename: "ExchangeRequest";
+  requestId: number;
+  amountWant: number;
+  bidRate: number;
+  amountPay: number;
+  currentRate: number;
+  fromCurrency: string;
+  toCurrency: string;
+}
+
+export interface FetchExchangeRequests {
+  exchangeRequests: (FetchExchangeRequests_exchangeRequests | null)[] | null;
+}
+
+export interface FetchExchangeRequestsVariables {
+  id?: number | null;
+}
+
+/* tslint:disable */
+/* eslint-disable */
+// @generated
+// This file was automatically generated and should not be edited.
+
+// ====================================================
+// GraphQL mutation operation: CreateRequest
+// ====================================================
+
+export interface CreateRequest {
+  createRequest: boolean;
+}
+
+export interface CreateRequestVariables {
+  input: ExchangeRequestInput;
+}
+
+/* tslint:disable */
+/* eslint-disable */
+// @generated
+// This file was automatically generated and should not be edited.
+
+// ====================================================
 // GraphQL query operation: FetchSurveys
 // ====================================================
 
@@ -296,6 +341,26 @@ export interface CreateUserVariables {
 // This file was automatically generated and should not be edited.
 
 // ====================================================
+// GraphQL fragment: ExchangeRequest
+// ====================================================
+
+export interface ExchangeRequest {
+  __typename: "ExchangeRequest";
+  requestId: number;
+  amountWant: number;
+  bidRate: number;
+  amountPay: number;
+  currentRate: number;
+  fromCurrency: string;
+  toCurrency: string;
+}
+
+/* tslint:disable */
+/* eslint-disable */
+// @generated
+// This file was automatically generated and should not be edited.
+
+// ====================================================
 // GraphQL fragment: Survey
 // ====================================================
 
@@ -373,6 +438,15 @@ export interface AccountInfo {
 export interface AccountInput {
   id: number;
   balance: number;
+}
+
+export interface ExchangeRequestInput {
+  amountWant: number;
+  bidRate: number;
+  amountPay: number;
+  currentRate: number;
+  fromCurrency: string;
+  toCurrency: string;
 }
 
 export interface SurveyInput {

@@ -75,13 +75,9 @@ function Exchange() {
       else if (data.notEnoughMoney == 1) {
         setDisplayFetch('No Enough Money')
       }
-     /*
-     fetch('/test-exchange')
-     console.log(currentRate)
-     setDisplayFetch('10')
-     */
   })
 }
+
 
   return (
     <>
