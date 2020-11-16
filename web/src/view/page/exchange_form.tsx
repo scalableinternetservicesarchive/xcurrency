@@ -21,7 +21,7 @@ export function ExchangeForm(props: ExchangeFormProps) {
 
 const divStyle = {
   display: 'flex',
-  alignItems: 'center'
+  alignItems: 'center',
 }
 
 //import { UserContext } from './user

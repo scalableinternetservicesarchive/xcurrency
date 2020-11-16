@@ -1,11 +1,13 @@
 import http from 'k6/http'
-// import { sleep } from 'k6'
+import { sleep } from 'k6'
 import { Counter, Rate } from 'k6/metrics'
+import { randomSeed } from 'k6'
+
 
 export const options = {
   scenarios: {
     example_scenario: {
-      // name of the executor to use
+      // name of the executor to usei
       executor: 'ramping-arrival-rate',
       // common scenario configuration
       startRate: '50',
@@ -22,19 +24,11 @@ export const options = {
 }
 
 export default function () {
-  // recordRates(
-  const resp = http.post(
-    'http://localhost:3000/graphql',
-    '{"operationName":"AnswerSurveyQuestion","variables":{"input":{"answer":"🤗","questionId":1}},"query":"mutation AnswerSurveyQuestion($input: SurveyInput!) {\\n  answerSurvey(input: $input)\\n}\\n"}',
-    {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    }
-  )
-  // )
+   //each user view their requests in transfer pages
+   const query = `{operationName":"FetchExchangeRequests","variables":{"id":1},"query":"query FetchExchangeRequests($id: Int) {\n  exchangeRequests(id: $id) {\n    ...ExchangeRequest\n    __typename\n  }\n}\n\nfragment ExchangeRequest on ExchangeRequest {\n  requestId\n  amountWant\n  bidRate\n  amountPay\n  currentRate\n  fromCurrency\n  toCurrency\n  __typename\n}\n"}`;
+   const header = { headers: { 'Content-Type': 'application/json' } }
+   http.post('http://localhost:3000/graphql', JSON.stringify({ query: query }), header )
   sleep(1)
-  http.get('http://localhost:3000')
 }
 
 const count200 = new Counter('status_code_2xx')
