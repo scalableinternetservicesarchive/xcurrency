@@ -32,6 +32,18 @@ export function ProfilePage(props: ProfilePageProps) {
         toastErr('Could not retrieve Plaid link token!')
       })
   }
+
+  const user = useContext(UserContext).user
+  const { loading, data } = useQuery<FetchAccounts, FetchAccountsVariables>(fetchAccounts, {
+    variables: { id: user!.id },
+  })
+
+  if (loading) {
+    return <div>loading...</div>
+  }
+
+  const userAccounts = data?.user?.account!
+
   return (
     <Page>
       <Section>
@@ -50,17 +62,19 @@ export function ProfilePage(props: ProfilePageProps) {
         <Table>
           <tbody>
             <AccountHeader name="Account Name" balance="Balance" />
-            <Accounts num={0} />
-            <Accounts num={1} />
-            <Accounts num={2} />
-            <Accounts num={3} />
-            <Accounts num={4} />
-            <Accounts num={5} />
-            <Accounts num={6} />
-            <Accounts num={7} />
-            <Accounts num={8} />
-            <Accounts num={9} />
-            <Accounts num={10} />
+            <Accounts acc={userAccounts[0]} num={0} />
+            <Accounts acc={userAccounts[1]} num={1} />
+            <Accounts acc={userAccounts[2]} num={2} />
+            <Accounts acc={userAccounts[3]} num={3} />
+            <Accounts acc={userAccounts[4]} num={4} />
+            <Accounts acc={userAccounts[5]} num={5} />
+            <Accounts acc={userAccounts[6]} num={6} />
+            <Accounts acc={userAccounts[7]} num={7} />
+            <Accounts acc={userAccounts[8]} num={8} />
+            <Accounts acc={userAccounts[9]} num={9} />
+            <Accounts acc={userAccounts[10]} num={10} />
+            <Accounts acc={userAccounts[11]} num={11} />
+            <Accounts acc={userAccounts[12]} num={12} />
           </tbody>
         </Table>
         <Spacer $h4 />
@@ -103,25 +117,14 @@ function AccountHeader(props: { name: string; balance: string }) {
   )
 }
 
-function Accounts(props: { num: number }) {
-  const user = useContext(UserContext).user
-  const { loading, data } = useQuery<FetchAccounts, FetchAccountsVariables>(fetchAccounts, {
-    variables: { id: user!.id },
-  })
-
-  if (loading) {
-    return <div>loading...</div>
-  }
-
-  const userAccounts = data?.user?.account!
-
+function Accounts(props: { acc: any; num: number }) {
   var err: string = 'No Accounts Linked'
-  if (userAccounts[props.num]) {
+  if (props.acc) {
     return (
       <TR>
         <BodyText>
-          <TD>{userAccounts[props.num].name}</TD>
-          <TD>{userAccounts[props.num].balance}</TD>
+          <TD>{props.acc.name}</TD>
+          <TD>{props.acc.balance}</TD>
         </BodyText>
       </TR>
     )
