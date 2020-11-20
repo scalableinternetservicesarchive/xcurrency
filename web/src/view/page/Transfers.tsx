@@ -40,7 +40,7 @@ var id = user.displayId()
 
     return (
     <div className="mw6">
-      {data.exchangeRequests?.map(r => (
+      {data.exchangeRequests?.slice(0).reverse().map(r => (
         <div key={r?.requestId} className="pa3 br2 mb2 bg-black-10 flex items-center">
             Amount Paid: {r?.amountPay} {r?.fromCurrency}, Amount Wanted: {r?.amountWant} {r?.toCurrency}, Bid Rate:
             {r?.bidRate}
