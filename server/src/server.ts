@@ -115,7 +115,8 @@ server.express.post(
       console.log('Already found user in the database!')
       return res.sendStatus(400)
     }
-    await User.insert({ name, email, password })
+    const hashedPassword = await bcrypt.hash(password, 10)
+    await User.insert({ name, email, password: hashedPassword })
     console.log('Inserted user into database!')
     return res.status(200).send('Success!')
   })

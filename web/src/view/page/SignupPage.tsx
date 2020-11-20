@@ -1,5 +1,4 @@
 import { navigate, RouteComponentProps } from '@reach/router'
-import * as bcrypt from 'bcryptjs'
 import * as React from 'react'
 import { check } from '../../../../common/src/util'
 import { Button } from '../../style/button'
@@ -35,26 +34,18 @@ function Signup() {
     if (!validateForm(email, password, passwordConfirmation, setError)) {
       return
     }
-
-    const saltRounds = 10
-    bcrypt.hash(password, saltRounds, function (err, hashedPassword) {
-      if (err) {
-        console.log("Couldn't hash the password!")
-      } else {
-        fetch('/auth/signup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email, password: hashedPassword }),
-        })
-          .then(res => {
-            check(res.ok)
-            navigate(getPath(Route.LOGIN))
-          })
-          .catch(err => {
-            toastErr('An account is already associated with this user!')
-          })
-      }
+    fetch('/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password }),
     })
+      .then(res => {
+        check(res.ok)
+        navigate(getPath(Route.LOGIN))
+      })
+      .catch(err => {
+        toastErr('An account is already associated with this user!')
+      })
   }
 
   return (
