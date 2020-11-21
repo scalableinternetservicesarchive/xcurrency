@@ -7,7 +7,7 @@ require('honeycomb-beeline')({
 })
 
 import assert from 'assert'
-import * as bcrypt from 'bcryptjs'
+import * as bcrypt from 'bcrypt'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import { json, raw, RequestHandler, static as expressStatic } from 'express'
@@ -81,7 +81,18 @@ server.express.post(
     const email = req.body.email
     const password = req.body.password
 
-    const user = await User.findOne({ where: { email } })
+
+    // const user = await User.findOne({ where: { email } })
+
+    // const user =  (await query(
+    //   `SELECT id, password FROM user
+    //     WHERE user.email = '${email}'`
+    // ))[0];
+
+    const user = await User.createQueryBuilder("user").select("user.id").addSelect("user.password")
+              .where("user.email = :email", { email })
+              .getOne();
+
     if (!user || !(await bcrypt.compare(password, user.password))) {
       res.status(403).send('Forbidden')
       return
@@ -110,7 +121,11 @@ server.express.post(
     console.log('POST /auth/signup')
 
     const { name, email, password } = req.body
-    const user = await User.findOne({ where: { email } })
+    // const user = await User.findOne({ where: { email } })
+    const user = await User.createQueryBuilder("user").select("user.id")
+      .where("user.email = :email", { email })
+      .getOne();
+
     if (user) {
       console.log('Already found user in the database!')
       return res.sendStatus(400)

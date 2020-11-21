@@ -65,13 +65,13 @@ export default function () {
     'Content-Type': 'application/json',
   }
   const uniqueUser = `${__VU}-${__ITER}`;
-  recordRates(http.get("http://localhost:3000/app/index"))
-  // recordRates(http.post('http://localhost:3000/auth/signup', `{"name":"${uniqueUser}","email":"${uniqueUser}@gmail.com","password":"12345678"}`, {headers: headers}))
+  // recordRates(http.get("http://localhost:3000/app/index"))
+  recordRates(http.post('http://localhost:3000/auth/signup', `{"name":"${uniqueUser}","email":"${uniqueUser}@gmail.com","password":"12345678"}`, {headers: headers}))
 
 
   // After signing up, you are redirected to login to the account automatically
   // sleep(2);
-  // recordRates(http.post('http://localhost:3000/auth/login', `{"email":"${uniqueUser}@gmail.com","password":"12345678"}`, {headers: headers}))
+  recordRates(http.post('http://localhost:3000/auth/login', `{"email":"${uniqueUser}@gmail.com","password":"12345678"}`, {headers: headers}))
 
   // Login redirects to profile page automatically, pause to link an external chase account
   // recordRates(http.post('http://localhost:3000/getPlaidLinkToken')) this is automatically performed on entering /app/profile (which needs to be optimized eventually)

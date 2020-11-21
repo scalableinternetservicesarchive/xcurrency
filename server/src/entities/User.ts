@@ -3,6 +3,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn
@@ -22,6 +23,7 @@ export class User extends BaseEntity implements GraphqlUser {
   @UpdateDateColumn()
   timeUpdated: Date
 
+  @Index()
   @Column({
     length: 100,
   })
