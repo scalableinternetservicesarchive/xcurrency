@@ -1,4 +1,5 @@
-import { ApolloClient, ApolloProvider, HttpLink, InMemoryCache } from '@apollo/client'
+import { ApolloClient, ApolloProvider, InMemoryCache } from '@apollo/client'
+import { SchemaLink } from '@apollo/client/link/schema'
 import { getDataFromTree } from '@apollo/client/react/ssr'
 import { isRedirect, ServerLocation } from '@reach/router'
 import 'cross-fetch/polyfill' // enables fetch in node
@@ -11,24 +12,10 @@ import { Config } from './config'
 
 const Styletron = require('styletron-engine-monolithic')
 
-export function renderApp(req: Request, res: Response) {
+export function renderApp(req: Request, res: Response, schema: any) {
   const apolloClient = new ApolloClient({
     ssrMode: true,
-    link: new HttpLink({
-      uri: `http://127.0.0.1:${Config.appserverPort}/graphql`,
-      credentials: 'same-origin',
-      fetch: async (uri: any, options: any) => {
-        const reqBody = JSON.parse(options!.body! as string)
-        const opName = reqBody.operationName
-        const actionName = reqBody.variables?.action?.actionName
-        const authToken = req.cookies.authToken
-        const headers = authToken ? { ...options.headers, 'x-authtoken': authToken } : options.headers
-        return fetch(`${uri}?opName=${opName}${actionName ? `&actionName=${actionName}` : ''}`, {
-          ...options,
-          headers,
-        })
-      },
-    }),
+    link: new SchemaLink({schema}),
     cache: new InMemoryCache(),
   })
 

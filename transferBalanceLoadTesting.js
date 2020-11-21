@@ -14,64 +14,13 @@ export const options = {
       preAllocatedVUs: 50,
       maxVUs: 100,
       stages: [
-        { target: 50, duration: '30s' },
+        { target: 200, duration: '30s' },
         { target: 0, duration: '30s' },
       ],
     },
   },
 }
 
-export default function () {
-  // recordRates(
-  //   http.post(
-  //     'http://localhost:3000/graphql',
-  //     '{"operationName":"AnswerSurveyQuestion","variables":{"input":{"answer":"🤗","questionId":1}},"query":"mutation AnswerSurveyQuestion($input: SurveyInput!) {\\n  answerSurvey(input: $input)\\n}\\n"}',
-  //     {
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       },
-  //     }
-  //   )
-  // )
-  // sleep(1)
-  // const res = http.get('http://localhost:3000')
-  console.log(`VU: ${__VU}  -  ITER: ${__ITER}`)
-
-
-  // Sign up for an account
-  recordRates(http.get('http://localhost:3000/app/index'))
-  sleep(2);
-  recordRates(http.get('http://localhost:3000/app/signup'))
-  sleep(2);
-  const headers = {
-    'Content-Type': 'application/json',
-  }
-  const uniqueUser = `${__VU}-${__ITER}`;
-  recordRates(http.post('http://localhost:3000/auth/signup', `{"name":"${uniqueUser}","email":"${uniqueUser}@gmail.com","password":"12345678"}`, {headers: headers}))
-
-
-  // After signing up, you are redirected to login to the account automatically
-  sleep(2);
-  recordRates(http.post('http://localhost:3000/auth/login', `{"email":"${uniqueUser}@gmail.com","password":"12345678"}`, {headers: headers}))
-
-  // Login redirects to profile page automatically, pause to link an external chase account
-  // recordRates(http.post('http://localhost:3000/getPlaidLinkToken')) this is automatically performed on entering /app/profile (which needs to be optimized eventually)
-  sleep(5);
-  recordRates(http.post('http://localhost:3000/createAccounts', '{"accounts":[{"account_id":"e3qz8qZNePty5K6bwnLwHXzjPmK9leFLlmp5J","balances":{"available":8113.27,"current":10000,"iso_currency_code":"CAD","limit":null,"unofficial_currency_code":null},"mask":"2163","name":"Chase Savings","official_name":"Chase College Savings","subtype":"savings","type":"depository"},{"account_id":"7mJeWJrzyaHZXWzNp51pUxjvMW76XEtgKxenj","balances":{"available":4939.59,"current":5000,"iso_currency_code":"CAD","limit":null,"unofficial_currency_code":null},"mask":"4409","name":"Chase Checking","official_name":"Chase College Savings","subtype":"checking","type":"depository"}]}', {headers: headers}))
-
-  // let query = `mutation {
-  //   createUser(input:{
-  //     userType:USER
-  //     email:"test@gmail.com"
-  //     name:"Test"
-  //     password:"123123123"
-  //   })
-  // }`
-
-  // recordRates(http.post('http://localhost:3000/graphql', JSON.stringify({ query }), { headers: headers }))
-
-  // console.log(res.body)
-}
 
 const count200 = new Counter('status_code_2xx')
 const count300 = new Counter('status_code_3xx')
@@ -99,3 +48,50 @@ function recordRates(res) {
     rate500.add(1)
   }
 }
+
+
+export default function () {
+  // console.log(`VU: ${__VU}  -  ITER: ${__ITER}`)
+
+
+  // Sign up for an account
+  // recordRates(http.get('http://localhost:3000/app/index'))
+  // sleep(2);
+  // recordRates(http.get('http://localhost:3000/app/signup'))
+  // sleep(2);
+
+
+  const headers = {
+    'Content-Type': 'application/json',
+  }
+  const uniqueUser = `${__VU}-${__ITER}`;
+  recordRates(http.get("http://localhost:3000/app/index"))
+  // recordRates(http.post('http://localhost:3000/auth/signup', `{"name":"${uniqueUser}","email":"${uniqueUser}@gmail.com","password":"12345678"}`, {headers: headers}))
+
+
+  // After signing up, you are redirected to login to the account automatically
+  // sleep(2);
+  // recordRates(http.post('http://localhost:3000/auth/login', `{"email":"${uniqueUser}@gmail.com","password":"12345678"}`, {headers: headers}))
+
+  // Login redirects to profile page automatically, pause to link an external chase account
+  // recordRates(http.post('http://localhost:3000/getPlaidLinkToken')) this is automatically performed on entering /app/profile (which needs to be optimized eventually)
+  // sleep(5);
+  // recordRates(http.get("http://localhost:3000/app/profile"))
+
+
+  // sleep(2);
+  // recordRates(http.post('http://localhost:3000/createAccounts', '{"accounts":[{"account_id":"e3qz8qZNePty5K6bwnLwHXzjPmK9leFLlmp5J","balances":{"available":8113.27,"current":10000,"iso_currency_code":"CAD","limit":null,"unofficial_currency_code":null},"mask":"2163","name":"Chase Savings","official_name":"Chase College Savings","subtype":"savings","type":"depository"},{"account_id":"7mJeWJrzyaHZXWzNp51pUxjvMW76XEtgKxenj","balances":{"available":4939.59,"current":5000,"iso_currency_code":"CAD","limit":null,"unofficial_currency_code":null},"mask":"4409","name":"Chase Checking","official_name":"Chase College Savings","subtype":"checking","type":"depository"}]}', {headers: headers}))
+  // let query = `mutation {
+  //   createUser(input:{
+  //     userType:USER
+  //     email:"test@gmail.com"
+  //     name:"Test"
+  //     password:"123123123"
+  //   })
+  // }`
+
+  // recordRates(http.post('http://localhost:3000/graphql', JSON.stringify({ query }), { headers: headers }))
+
+  // console.log(res.body)
+}
+
