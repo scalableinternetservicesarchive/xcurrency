@@ -13,6 +13,7 @@ import cors from 'cors'
 import { json, raw, RequestHandler, static as expressStatic } from 'express'
 import { getOperationAST, parse as parseGraphql, specifiedRules, subscribe as gqlSubscribe, validate } from 'graphql'
 import { GraphQLServer } from 'graphql-yoga'
+import Redis from 'ioredis'
 import { forAwaitEach, isAsyncIterable } from 'iterall'
 import path from 'path'
 import 'reflect-metadata'
@@ -50,6 +51,8 @@ const plaidClient = new plaid.Client({
   env: plaid.environments.sandbox,
 })
 
+const redis = new Redis();
+
 const server = new GraphQLServer({
   typeDefs: getSchema(),
   resolvers: graphqlRoot as any,
@@ -80,15 +83,6 @@ server.express.post(
     console.log('POST /auth/login')
     const email = req.body.email
     const password = req.body.password
-
-
-    // const user = await User.findOne({ where: { email } })
-
-    // const user =  (await query(
-    //   `SELECT id, password FROM user
-    //     WHERE user.email = '${email}'`
-    // ))[0];
-
     const user = await User.createQueryBuilder("user").select("user.id").addSelect("user.password")
               .where("user.email = :email", { email })
               .getOne();
@@ -119,9 +113,7 @@ server.express.post(
   '/auth/signup',
   asyncRoute(async (req, res) => {
     console.log('POST /auth/signup')
-
     const { name, email, password } = req.body
-    // const user = await User.findOne({ where: { email } })
     const user = await User.createQueryBuilder("user").select("user.id")
       .where("user.email = :email", { email })
       .getOne();
@@ -404,90 +396,77 @@ let exch = await ExchangeRequest.insert({ amountWant: exReqData.amountWant, amou
     console.log('POST /confirm-request')
     const { amountWant, amountPay, bidRate, currentRate, fromCurrency, toCurrency } = req.body
     console.log(currentRate)
-    const authToken = req.cookies.authToken
     let paid = false;
-    if (authToken) {
-      //console.log(authToken)
-      const session = await Session.findOne({ where: { authToken }, relations: ['user'] })
-      //console.log(session)
-      if (session) {
-        const exReqData = new exReq(session.user.id, bidRate, amountPay, amountWant, fromCurrency, toCurrency)
-        //get requester info
-        //get requester account
-        await transaction(async () => {
-          let requesterUser = await User.findOne({ where: { id: exReqData.userId } })
-          //console.log(requesterUser)
-          if (requesterUser) {
-            let userAccount = await Account.createQueryBuilder('account')
-              .leftJoinAndSelect('account.user', 'user')
-              .where('user.id = :uId ', { uId: requesterUser.id })
-              .andWhere('country = :fromCurrency', { fromCurrency: exReqData.fromCurrency })
-              .andWhere('type = :accountType', { accountType: AccountType.Internal })
-              .getOne()
-            if (userAccount) {
-              if (Number(userAccount.balance) - Number(exReqData.amountPay) >= 0) {
-                //check if userToAccount exists
-                //substract from account
-                userAccount.balance = Number(userAccount.balance) - Number(exReqData.amountPay)
-                Account.save(userAccount)
-                paid = true;
-                res.setHeader('Content-Type', 'application/json')
-                res.status(200).send(JSON.stringify({ success: 1, notEnoughMoney: 0, noAccount: 0 }))
-              } else {
-                res.setHeader('Content-Type', 'application/json')
-                res.status(200).send(JSON.stringify({ success: 0, notEnoughMoney: 1, noAccount: 0 }))
-              }
-            } else {
-              console.log(exReqData)
-              res.setHeader('Content-Type', 'application/json')
-              res.status(200).send(JSON.stringify({ success: 0, notEnoughMoney: 0, noAccount: 1 }))
-            }
+    const user = await getLoggedInUser(req);
+    const exReqData = new exReq(user.id, bidRate, amountPay, amountWant, fromCurrency, toCurrency)
+    //get requester info
+    //get requester account
+    await transaction(async () => {
+      let requesterUser = await User.findOne({ where: { id: exReqData.userId } })
+      //console.log(requesterUser)
+      if (requesterUser) {
+        let userAccount = await Account.createQueryBuilder('account')
+          .leftJoinAndSelect('account.user', 'user')
+          .where('user.id = :uId ', { uId: requesterUser.id })
+          .andWhere('country = :fromCurrency', { fromCurrency: exReqData.fromCurrency })
+          .andWhere('type = :accountType', { accountType: AccountType.Internal })
+          .getOne()
+        if (userAccount) {
+          if (Number(userAccount.balance) - Number(exReqData.amountPay) >= 0) {
+            //check if userToAccount exists
+            //substract from account
+            userAccount.balance = Number(userAccount.balance) - Number(exReqData.amountPay)
+            Account.save(userAccount)
+            paid = true;
+            res.setHeader('Content-Type', 'application/json')
+            res.status(200).send(JSON.stringify({ success: 1, notEnoughMoney: 0, noAccount: 0 }))
+          } else {
+            res.setHeader('Content-Type', 'application/json')
+            res.status(200).send(JSON.stringify({ success: 0, notEnoughMoney: 1, noAccount: 0 }))
           }
-        })
-        // check for match and perform transaction
-        await transaction(async () => {
-          let requesterUser = await User.findOne({ where: { id: exReqData.userId } })
-          if (requesterUser && paid) {
-            let userAccount = await Account.createQueryBuilder('account')
-              .leftJoinAndSelect('account.user', 'user')
-              .where('user.id = :uId ', { uId: requesterUser.id })
-              .andWhere('country = :fromCurrency', { fromCurrency: exReqData.fromCurrency })
-              .andWhere('type = :accountType', { accountType: AccountType.Internal })
-              .getOne()
-            if (userAccount) {
-              let userToAccount = await Account.createQueryBuilder('account')
-                .leftJoinAndSelect('account.user', 'user')
-                .where('user.id = :uId', { uId: exReqData.userId })
-                .andWhere('country = :toCurrency', { toCurrency: exReqData.toCurrency })
-                .andWhere('type = :accountType', { accountType: AccountType.Internal })
-                .getOne()
-              if (userToAccount) {
-                await executeExchange(currentRate, requesterUser, userAccount, userToAccount, exReqData)
-              } else {
-                //no userToAccount, create a new account to store desire money
-                const accountId = await Account.insert({
-                  name: `Multicurrency Account - ${exReqData.toCurrency}`,
-                  country: exReqData.toCurrency,
-                  type: AccountType.Internal,
-                  balance: 0.0,
-                  user: requesterUser,
-                })
-                let newAccount = await Account.findOne({ where: { id: accountId.generatedMaps[0].id } })
-                if (newAccount) {
-                  await executeExchange(currentRate, requesterUser, userAccount, newAccount, exReqData)
-                }
-              }
-            }
-          }
-        })
-      } else {
-        //session not found, login
-        res.redirect('/app/login')
+        } else {
+          console.log(exReqData)
+          res.setHeader('Content-Type', 'application/json')
+          res.status(200).send(JSON.stringify({ success: 0, notEnoughMoney: 0, noAccount: 1 }))
+        }
       }
-    } else {
-      //not token found, login
-      res.redirect('/app/login')
-    }
+    })
+    // check for match and perform transaction
+    await transaction(async () => {
+      let requesterUser = await User.findOne({ where: { id: exReqData.userId } })
+      if (requesterUser && paid) {
+        let userAccount = await Account.createQueryBuilder('account')
+          .leftJoinAndSelect('account.user', 'user')
+          .where('user.id = :uId ', { uId: requesterUser.id })
+          .andWhere('country = :fromCurrency', { fromCurrency: exReqData.fromCurrency })
+          .andWhere('type = :accountType', { accountType: AccountType.Internal })
+          .getOne()
+        if (userAccount) {
+          let userToAccount = await Account.createQueryBuilder('account')
+            .leftJoinAndSelect('account.user', 'user')
+            .where('user.id = :uId', { uId: exReqData.userId })
+            .andWhere('country = :toCurrency', { toCurrency: exReqData.toCurrency })
+            .andWhere('type = :accountType', { accountType: AccountType.Internal })
+            .getOne()
+          if (userToAccount) {
+            await executeExchange(currentRate, requesterUser, userAccount, userToAccount, exReqData)
+          } else {
+            //no userToAccount, create a new account to store desire money
+            const accountId = await Account.insert({
+              name: `Multicurrency Account - ${exReqData.toCurrency}`,
+              country: exReqData.toCurrency,
+              type: AccountType.Internal,
+              balance: 0.0,
+              user: requesterUser,
+            })
+            let newAccount = await Account.findOne({ where: { id: accountId.generatedMaps[0].id } })
+            if (newAccount) {
+              await executeExchange(currentRate, requesterUser, userAccount, newAccount, exReqData)
+            }
+          }
+        }
+      }
+    })
   })
 )
 
@@ -628,57 +607,55 @@ server.express.post('/graphqlsubscription/disconnect', (req, res) => {
 server.express.post(
   '/graphql',
   asyncRoute(async (req, res, next) => {
-    const authToken = req.cookies.authToken || req.header('x-authtoken')
-    if (authToken) {
-      const session = await Session.findOne({ where: { authToken }, relations: ['user'] })
-      if (session) {
-        const reqAny = req as any
-        reqAny.user = session.user
-      }
-    }
+    setReqUser(req, await getLoggedInUser(req));
     next()
   })
 )
 
-server.express.post('/getPlaidLinkToken', async (req: any, res) => {
-  const authToken = req.cookies.authToken || req.header('x-authtoken')
+function setReqUser(req: any, user: any) {
+  req.user = user;
+}
+
+async function getLoggedInUser(req: any) {
+  const authToken = req.cookies.authToken || req.header('x-authtoken');
   if (authToken) {
-    const session = await Session.findOne({ where: { authToken }, relations: ['user'] })
-    if (session) {
-      const clientUserId = session.user.id
-      try {
-        const tokenResponse = await plaidClient.createLinkToken({
-          user: {
-            client_user_id: String(clientUserId),
-          },
-          client_name: 'XCurrency',
-          products: ['auth'],
-          country_codes: ['US'],
-          language: 'en',
-          webhook: 'https://webhook.sample.com',
-        })
-        return res.send({ link_token: tokenResponse.link_token })
-      } catch (e) {
-        return res.send({ error: e.message })
-      }
-    } else {
-      return res.send({ error: 'No session associated with the logged in user could be found!' })
+    const redisResponse = await redis.get(authToken);
+    if (redisResponse) {
+      return JSON.parse(redisResponse);
     }
-  } else {
-    return res.send({ error: 'No authentication cookie could be found! Please try logging in.' })
+    else {
+      const session = await Session.findOne({ where: { authToken }, relations: ['user'] })
+      if (session) {
+        redis.set(authToken, JSON.stringify(session.user))
+        return session.user;
+      }
+    }
+  }
+}
+
+server.express.post('/getPlaidLinkToken', async (req: any, res) => {
+  const user = await getLoggedInUser(req);
+  try {
+    const tokenResponse = await plaidClient.createLinkToken({
+      user: {
+        client_user_id: String(user.id),
+      },
+      client_name: 'XCurrency',
+      products: ['auth'],
+      country_codes: ['US'],
+      language: 'en',
+      webhook: 'https://webhook.sample.com',
+    })
+    return res.send({ link_token: tokenResponse.link_token })
+  } catch (e) {
+    return res.send({ error: e.message })
   }
 })
 
 server.express.get('/requests', async (req: any, res) => {
-  const authToken = req.cookies.authToken || req.header('x-authtoken')
-  if (authToken) {
-    const session = await Session.findOne({ where: { authToken }, relations: ['user'] })
-    if (session) {
-      const clientUser = session.user
-      const requests = await ExchangeRequest.find({ where: { user: clientUser } })
-      res.status(200).type('json').send(requests)
-    }
-  }
+  const user = await getLoggedInUser(req);
+  const requests = await ExchangeRequest.find({ where: { user } })
+  res.status(200).type('json').send(requests)
 })
 
 /*
@@ -689,25 +666,11 @@ server.express.post('/getExternalAccounts', async (req, res) => {
     const publicToken = req.body.public_token
     // Exchange the client-side public_token for a server access_token
     const tokenResponse = await plaidClient.exchangePublicToken(publicToken)
-    // Save the access_token and item_id to a persistent database
-    const accessToken = tokenResponse.access_token
-
-    const authToken = req.cookies.authToken || req.header('x-authtoken')
-    if (authToken) {
-      const session = await Session.findOne({ where: { authToken }, relations: ['user'] })
-      if (session) {
-        // Save the access token for future use
-        const user = session.user
-        user.plaidAccessToken = accessToken
-        await user.save()
-        const { accounts } = await plaidClient.getAccounts(accessToken)
-        return res.status(200).send(accounts)
-      }
-    }
+    const { accounts } = await plaidClient.getAccounts(tokenResponse.access_token)
+    return res.status(200).send(accounts)
   } catch (e) {
     return res.status(500).send({ error: e.message })
   }
-  return res.sendStatus(200)
 })
 
 /**
@@ -715,59 +678,56 @@ server.express.post('/getExternalAccounts', async (req, res) => {
  */
 server.express.post('/createAccounts', async (req, res) => {
   const externalAccounts = req.body.accounts
-  const authToken = req.cookies.authToken || req.header('x-authtoken')
-  if (authToken) {
-    const session = await Session.findOne({ where: { authToken }, relations: ['user'] })
-    if (session) {
-      for (const externalAccount of externalAccounts) {
-        if (externalAccount.subtype === 'savings' || externalAccount.subtype == 'checking') {
-          const { current: accountBalance, iso_currency_code: accountCurrencyCode } = externalAccount.balances
-          const externalAccountName = `${externalAccount.name} - ${accountCurrencyCode}`
-          const user = session.user
-          const externalAccountExists = (
-            await query(
-              `SELECT id FROM account
-                WHERE account.userId = ${user.id} and
-                account.country = '${accountCurrencyCode}' and
-                account.name = '${externalAccountName}' and
-                account.type = '${AccountType.External}'`
-            )
-          ).length
+  const user = await getLoggedInUser(req);
+  const newAccountIds = [];
+  for (const externalAccount of externalAccounts) {
+    if (externalAccount.subtype === 'savings' || externalAccount.subtype == 'checking') {
+      const { current: accountBalance, iso_currency_code: accountCurrencyCode } = externalAccount.balances
+      const externalAccountName = `${externalAccount.name} - ${accountCurrencyCode}`
+      const externalAccountExists = (
+        await query(
+          `SELECT id FROM account
+            WHERE account.userId = ${user.id} and
+            account.country = '${accountCurrencyCode}' and
+            account.name = '${externalAccountName}' and
+            account.type = '${AccountType.External}'`
+        )
+      ).length
 
-          if (!externalAccountExists) {
-            await Account.insert({
-              name: `${externalAccountName}`,
-              country: accountCurrencyCode,
-              balance: accountBalance,
-              user,
-              type: AccountType.External,
-            })
+      if (!externalAccountExists) {
+        const insertResponse = await Account.insert({
+          name: `${externalAccountName}`,
+          country: accountCurrencyCode,
+          balance: accountBalance,
+          user,
+          type: AccountType.External,
+        })
+        newAccountIds.push(insertResponse.identifiers[0].id)
 
-            const internalAccountExists = (
-              await query(
-                `SELECT id FROM account
-                  WHERE account.userId = ${user.id} and
-                  account.country = '${accountCurrencyCode}' and
-                  account.type = '${AccountType.Internal}'`
-              )
-            ).length
 
-            if (!internalAccountExists) {
-              await Account.insert({
-                country: accountCurrencyCode,
-                name: `Multicurrency Account - ${accountCurrencyCode}`,
-                balance: 0,
-                user,
-                type: AccountType.Internal,
-              })
-            }
-          }
+        const internalAccountExists = (
+          await query(
+            `SELECT id FROM account
+              WHERE account.userId = ${user.id} and
+              account.country = '${accountCurrencyCode}' and
+              account.type = '${AccountType.Internal}'`
+          )
+        ).length
+
+        if (!internalAccountExists) {
+          const insertResponse = await Account.insert({
+            country: accountCurrencyCode,
+            name: `Multicurrency Account - ${accountCurrencyCode}`,
+            balance: 0,
+            user,
+            type: AccountType.Internal,
+          })
+          newAccountIds.push(insertResponse.identifiers[0].id)
         }
       }
-      return res.sendStatus(200)
     }
   }
-  return res.status(500).send({ error: 'Could not add the linked accounts!' })
+  return res.status(200).send({newAccountIds})
 })
 
 server.express.post('/transferBalance', async (req, res) => {

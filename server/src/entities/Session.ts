@@ -1,4 +1,4 @@
-import { BaseEntity, Column, CreateDateColumn, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn } from 'typeorm'
+import { BaseEntity, Column, CreateDateColumn, Entity, Index, JoinColumn, OneToOne, PrimaryGeneratedColumn } from 'typeorm'
 import { User } from './User'
 
 @Entity()
@@ -13,6 +13,7 @@ export class Session extends BaseEntity {
   @JoinColumn()
   user: User
 
+  @Index()
   @Column({
     length: 36,
   })
