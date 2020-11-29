@@ -62,19 +62,19 @@ export function ProfilePage(props: ProfilePageProps) {
         <Table>
           <tbody>
             <AccountHeader name="Account Name" balance="Balance" />
-            <Accounts acc=userAccounts[0] num={0} />
-            <Accounts acc=userAccounts[1] num={1} />
-            <Accounts acc=userAccounts[2] num={2} />
-            <Accounts acc=userAccounts[3] num={3} />
-            <Accounts acc=userAccounts[4] num={4} />
-            <Accounts acc=userAccounts[5] num={5} />
-            <Accounts acc=userAccounts[6] num={6} />
-            <Accounts acc=userAccounts[7] num={7} />
-            <Accounts acc=userAccounts[8] num={8} />
-            <Accounts acc=userAccounts[9] num={9} />
-            <Accounts acc=userAccounts[10] num={10} />
-            <Accounts acc=userAccounts[11] num={11} />
-            <Accounts acc=userAccounts[12] num={12} />
+            <Accounts acc={userAccounts[0]} num={0} />
+            <Accounts acc={userAccounts[1]} num={1} />
+            <Accounts acc={userAccounts[2]} num={2} />
+            <Accounts acc={userAccounts[3]} num={3} />
+            <Accounts acc={userAccounts[4]} num={4} />
+            <Accounts acc={userAccounts[5]} num={5} />
+            <Accounts acc={userAccounts[6]} num={6} />
+            <Accounts acc={userAccounts[7]} num={7} />
+            <Accounts acc={userAccounts[8]} num={8} />
+            <Accounts acc={userAccounts[9]} num={9} />
+            <Accounts acc={userAccounts[10]} num={10} />
+            <Accounts acc={userAccounts[11]} num={11} />
+            <Accounts acc={userAccounts[12]} num={12} />
           </tbody>
         </Table>
         <Spacer $h4 />
@@ -118,8 +118,8 @@ function AccountHeader(props: { name: string; balance: string }) {
 }
 
 function Accounts(props: { acc: any; num: number }) {
-  var err: string = 'No Accounts Linked'
-  if (acc) {
+  const err = 'No Accounts Linked'
+  if (props.acc) {
     return (
       <TR>
         <BodyText>
