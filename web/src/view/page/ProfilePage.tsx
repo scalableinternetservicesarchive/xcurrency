@@ -36,6 +36,7 @@ export function ProfilePage(props: ProfilePageProps) {
   const user = useContext(UserContext).user
   const { loading, data } = useQuery<FetchAccounts, FetchAccountsVariables>(fetchAccounts, {
     variables: { id: user!.id },
+    pollInterval: 1000,
   })
 
   if (loading) {
