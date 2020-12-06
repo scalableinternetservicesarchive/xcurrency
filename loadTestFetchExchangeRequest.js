@@ -14,7 +14,7 @@ export const options = {
       timeUnit: '1s',
       // executor-specific configuration
       preAllocatedVUs: 50,
-      maxVUs: 100,
+      maxVUs: 200,
       stages: [
         { target: 200, duration: '30s' },
         { target: 0, duration: '30s' },

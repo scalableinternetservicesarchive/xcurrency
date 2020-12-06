@@ -18,7 +18,7 @@ export function Transfers(props: TransfersProps) {
 
 export function MyTransfers() {
   //const [requests, setRequests] = React.useState([] as ExchangeRequest[])
-/*
+  /*
   fetch('/requests')
     .then(response => response.json())
     .then(json => setRequests(json))
@@ -26,32 +26,37 @@ export function MyTransfers() {
       console.error(err)
     })
 */
-const user = React.useContext(UserContext)
-var id = user.displayId()
-    const { loading, data } = useQuery<FetchExchangeRequests, FetchExchangeRequestsVariables>(fetchExchangeRequests, {
-    variables: { id },})
+  const user = React.useContext(UserContext)
+  const id = user.displayId()
+  const { loading, data } = useQuery<FetchExchangeRequests, FetchExchangeRequestsVariables>(fetchExchangeRequests, {
+    variables: { id },
+    pollInterval: 1000,
+  })
 
-    if (loading) {
+  if (loading) {
     return <div>loading...</div>
-    }
-    if (!data || data.exchangeRequests?.length===0) {
+  }
+  if (!data || data.exchangeRequests?.length === 0) {
     return <div>no surveys</div>
-    }
+  }
 
-    return (
+  return (
     <div className="mw6">
-      {data.exchangeRequests?.map(r => (
-        <div key={r?.requestId} className="pa3 br2 mb2 bg-black-10 flex items-center">
+      {data.exchangeRequests
+        ?.slice(0)
+        .reverse()
+        .map(r => (
+          <div key={r?.requestId} className="pa3 br2 mb2 bg-black-10 flex items-center">
             Amount Paid: {r?.amountPay} {r?.fromCurrency}, Amount Wanted: {r?.amountWant} {r?.toCurrency}, Bid Rate:
             {r?.bidRate}
             <br></br>
             <br></br>
-        </div>
-      ))}
+          </div>
+        ))}
     </div>
-    )
+  )
 
- /* return (
+  /* return (
     <div>
       <br></br>
       <br></br>

@@ -77,6 +77,32 @@ server.express.get('/app/*', (req, res) => {
   renderApp(req, res, server.executableSchema)
 })
 
+//=================used to seed users and admin for load testing purpose (loadCreateRequestPeruser.js)
+//password: tester123456
+async function seedDataForLoadCreateRequest(users : number) {
+  for (let i =0; i<users; i++) {
+    const obj = await User.insert({ email: `user${i}@gmail.com`, name: `VUser${i}`, password: '$2a$10$m9QP5Kon3qyDOvmsVG1CkOO28TPYw0gMnY1dWiD8ppZeZdguMdWHy', userType: UserType.User})
+    const user = await User.findOne({ id : obj.generatedMaps[0].id })
+    await Account.insert({ country: 'USD', type: AccountType.Internal, balance: 100000.00, name: 'whatever' , user: user  })
+    await Account.insert({ country: 'CAD', type: AccountType.Internal, balance: 100000.00, name: 'whatever' , user: user  })
+  }
+}
+
+server.express.get('/seedVusers', asyncRoute( async (req, res) =>{
+  seedDataForLoadCreateRequest(300);
+  res.status(200).send("successfully seeded")
+}))
+
+server.express.get('/seedAdmin', asyncRoute( async (req, res) => {
+  const obj = await User.insert({ email: `admin@gmail.com`, name: `admin@hank`, password: '$2a$10$m9QP5Kon3qyDOvmsVG1CkOO28TPYw0gMnY1dWiD8ppZeZdguMdWHy', userType: UserType.Admin})
+  const user = await User.findOne({ id : obj.generatedMaps[0].id })
+  await Account.insert({ country: 'USD', type: AccountType.Internal, balance: 1000000.00, name: 'whatever' , user: user  })
+  await Account.insert({ country: 'CAD', type: AccountType.Internal, balance: 1000000.00, name: 'whatever' , user: user  })
+  res.status(200).send("successfully seeded")
+}))
+
+
+
 server.express.post(
   '/auth/login',
   asyncRoute(async (req, res) => {
@@ -152,7 +178,6 @@ async function executeExchange(
   /*await transaction( async () => {
 
   })*/
-  await transaction(async () => {
     const requestId = await ExchangeRequest.insert({
       amountWant: exReqData.amountWant,
       amountPay: exReqData.amountPay,
@@ -259,7 +284,6 @@ async function executeExchange(
         }
       }
     }
-  })
 } /*
 // test exchange request functionality
 server.express.get('/test-exchange', asyncRoute(async (req, res) => {
