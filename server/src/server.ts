@@ -109,9 +109,11 @@ server.express.post(
     console.log('POST /auth/login')
     const email = req.body.email
     const password = req.body.password
-    const user = await User.createQueryBuilder("user").select("user.id").addSelect("user.password")
-              .where("user.email = :email", { email })
-              .getOne();
+    const user = await User.createQueryBuilder('user')
+      .select('user.id')
+      .addSelect('user.password')
+      .where('user.email = :email', { email })
+      .getOne()
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
       res.status(403).send('Forbidden')
@@ -126,6 +128,9 @@ server.express.post(
     session.authToken = authToken
     session.user = user
     await Session.save(session).then(s => console.log('saved session ' + s.id))
+
+    // Cache the session upon login
+    redis.set(session.authToken, JSON.stringify(session.user))
 
     const SESSION_DURATION = 30 * 24 * 60 * 60 * 1000 // 30 days
     res

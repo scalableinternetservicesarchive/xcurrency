@@ -53,31 +53,37 @@ function recordRates(res) {
 export default function () {
   // console.log(`VU: ${__VU}  -  ITER: ${__ITER}`)
 
-
   // Sign up for an account
   // recordRates(http.get('http://localhost:3000/app/index'))
   // sleep(2);
   // recordRates(http.get('http://localhost:3000/app/signup'))
   // sleep(2);
 
-
   const headers = {
     'Content-Type': 'application/json',
   }
-  const uniqueUser = `${__VU}-${__ITER}`;
+  const uniqueUser = `${__VU}-${__ITER}`
   // recordRates(http.get("http://localhost:3000/app/index"))
-  recordRates(http.post('http://localhost:3000/auth/signup', `{"name":"${uniqueUser}","email":"${uniqueUser}@gmail.com","password":"12345678"}`, {headers: headers}))
-
+  recordRates(
+    http.post(
+      'http://localhost:3000/auth/signup',
+      `{"name":"${uniqueUser}","email":"${uniqueUser}@gmail.com","password":"12345678"}`,
+      { headers: headers }
+    )
+  )
 
   // After signing up, you are redirected to login to the account automatically
   // sleep(2);
-  recordRates(http.post('http://localhost:3000/auth/login', `{"email":"${uniqueUser}@gmail.com","password":"12345678"}`, {headers: headers}))
+  recordRates(
+    http.post('http://localhost:3000/auth/login', `{"email":"${uniqueUser}@gmail.com","password":"12345678"}`, {
+      headers: headers,
+    })
+  )
 
   // Login redirects to profile page automatically, pause to link an external chase account
   // recordRates(http.post('http://localhost:3000/getPlaidLinkToken')) this is automatically performed on entering /app/profile (which needs to be optimized eventually)
   // sleep(5);
   recordRates(http.get('http://localhost:3000/app/profile'))
-
 
   // sleep(2);
   const res = http.post(
@@ -87,7 +93,7 @@ export default function () {
   )
   recordRates(res)
   const { newAccountIds } = JSON.parse(res.body)
-  console.log(newAccountIds[0], newAccountIds[1])
+  // console.log(newAccountIds[0], newAccountIds[1])
   recordRates(
     http.post(
       'http://localhost:3000/transferBalance',
@@ -97,7 +103,6 @@ export default function () {
       }
     )
   )
-
 
   // let query = `mutation {
   //   createUser(input:{
