@@ -81,10 +81,15 @@ export interface MutationCreateUserArgs {
 export interface Subscription {
   __typename?: 'Subscription'
   surveyUpdates?: Maybe<Survey>
+  requestUpdates?: Maybe<ExchangeRequest>
 }
 
 export interface SubscriptionSurveyUpdatesArgs {
   surveyId: Scalars['Int']
+}
+
+export interface SubscriptionRequestUpdatesArgs {
+  userId: Scalars['Int']
 }
 
 export interface User {
@@ -384,6 +389,13 @@ export type SubscriptionResolvers<
     ParentType,
     ContextType,
     RequireFields<SubscriptionSurveyUpdatesArgs, 'surveyId'>
+  >
+  requestUpdates?: SubscriptionResolver<
+    Maybe<ResolversTypes['ExchangeRequest']>,
+    'requestUpdates',
+    ParentType,
+    ContextType,
+    RequireFields<SubscriptionRequestUpdatesArgs, 'userId'>
   >
 }
 

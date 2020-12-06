@@ -53,34 +53,57 @@ function recordRates(res) {
 export default function () {
   // console.log(`VU: ${__VU}  -  ITER: ${__ITER}`)
 
-
   // Sign up for an account
   // recordRates(http.get('http://localhost:3000/app/index'))
   // sleep(2);
   // recordRates(http.get('http://localhost:3000/app/signup'))
   // sleep(2);
 
-
   const headers = {
     'Content-Type': 'application/json',
   }
-  const uniqueUser = `${__VU}-${__ITER}`;
+  const uniqueUser = `${__VU}-${__ITER}`
   // recordRates(http.get("http://localhost:3000/app/index"))
-  recordRates(http.post('http://localhost:3000/auth/signup', `{"name":"${uniqueUser}","email":"${uniqueUser}@gmail.com","password":"12345678"}`, {headers: headers}))
-
+  recordRates(
+    http.post(
+      'http://localhost:3000/auth/signup',
+      `{"name":"${uniqueUser}","email":"${uniqueUser}@gmail.com","password":"12345678"}`,
+      { headers: headers }
+    )
+  )
 
   // After signing up, you are redirected to login to the account automatically
   // sleep(2);
-  recordRates(http.post('http://localhost:3000/auth/login', `{"email":"${uniqueUser}@gmail.com","password":"12345678"}`, {headers: headers}))
+  recordRates(
+    http.post('http://localhost:3000/auth/login', `{"email":"${uniqueUser}@gmail.com","password":"12345678"}`, {
+      headers: headers,
+    })
+  )
 
   // Login redirects to profile page automatically, pause to link an external chase account
   // recordRates(http.post('http://localhost:3000/getPlaidLinkToken')) this is automatically performed on entering /app/profile (which needs to be optimized eventually)
   // sleep(5);
-  // recordRates(http.get("http://localhost:3000/app/profile"))
-
+  recordRates(http.get('http://localhost:3000/app/profile'))
 
   // sleep(2);
-  // recordRates(http.post('http://localhost:3000/createAccounts', '{"accounts":[{"account_id":"e3qz8qZNePty5K6bwnLwHXzjPmK9leFLlmp5J","balances":{"available":8113.27,"current":10000,"iso_currency_code":"CAD","limit":null,"unofficial_currency_code":null},"mask":"2163","name":"Chase Savings","official_name":"Chase College Savings","subtype":"savings","type":"depository"},{"account_id":"7mJeWJrzyaHZXWzNp51pUxjvMW76XEtgKxenj","balances":{"available":4939.59,"current":5000,"iso_currency_code":"CAD","limit":null,"unofficial_currency_code":null},"mask":"4409","name":"Chase Checking","official_name":"Chase College Savings","subtype":"checking","type":"depository"}]}', {headers: headers}))
+  const res = http.post(
+    'http://localhost:3000/createAccounts',
+    '{"accounts":[{"account_id":"e3qz8qZNePty5K6bwnLwHXzjPmK9leFLlmp5J","balances":{"available":8113.27,"current":10000,"iso_currency_code":"CAD","limit":null,"unofficial_currency_code":null},"mask":"2163","name":"Chase Savings","official_name":"Chase College Savings","subtype":"savings","type":"depository"},{"account_id":"7mJeWJrzyaHZXWzNp51pUxjvMW76XEtgKxenj","balances":{"available":4939.59,"current":5000,"iso_currency_code":"CAD","limit":null,"unofficial_currency_code":null},"mask":"4409","name":"Chase Checking","official_name":"Chase College Savings","subtype":"checking","type":"depository"}]}',
+    { headers: headers }
+  )
+  recordRates(res)
+  const { newAccountIds } = JSON.parse(res.body)
+  // console.log(newAccountIds[0], newAccountIds[1])
+  recordRates(
+    http.post(
+      'http://localhost:3000/transferBalance',
+      `{"fromAccountId":${newAccountIds[0]},"toAccountId":${newAccountIds[1]},"amount":5000}`,
+      {
+        headers: headers,
+      }
+    )
+  )
+
   // let query = `mutation {
   //   createUser(input:{
   //     userType:USER

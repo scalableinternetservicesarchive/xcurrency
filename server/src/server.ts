@@ -744,11 +744,12 @@ server.express.post('/createAccounts', async (req, res) => {
   if (authToken) {
     const session = await Session.findOne({ where: { authToken }, relations: ['user'] })
     if (session) {
+      const newAccountIds = []
+      const user = session.user
       for (const externalAccount of externalAccounts) {
         if (externalAccount.subtype === 'savings' || externalAccount.subtype == 'checking') {
           const { current: accountBalance, iso_currency_code: accountCurrencyCode } = externalAccount.balances
           const externalAccountName = `${externalAccount.name} - ${accountCurrencyCode}`
-          const user = session.user
           const externalAccountExists = (
             await query(
               `SELECT id FROM account
@@ -760,13 +761,14 @@ server.express.post('/createAccounts', async (req, res) => {
           ).length
 
           if (!externalAccountExists) {
-            await Account.insert({
+            const insertResponse = await Account.insert({
               name: `${externalAccountName}`,
               country: accountCurrencyCode,
               balance: accountBalance,
               user,
               type: AccountType.External,
             })
+            newAccountIds.push(insertResponse.identifiers[0].id)
 
             const internalAccountExists = (
               await query(
@@ -778,18 +780,19 @@ server.express.post('/createAccounts', async (req, res) => {
             ).length
 
             if (!internalAccountExists) {
-              await Account.insert({
+              const insertResponse = await Account.insert({
                 country: accountCurrencyCode,
                 name: `Multicurrency Account - ${accountCurrencyCode}`,
                 balance: 0,
                 user,
                 type: AccountType.Internal,
               })
+              newAccountIds.push(insertResponse.identifiers[0].id)
             }
           }
         }
       }
-      return res.sendStatus(200)
+      return res.status(200).send({ newAccountIds })
     }
   }
   return res.status(500).send({ error: 'Could not add the linked accounts!' })
