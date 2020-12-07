@@ -93,7 +93,7 @@ export default function () {
   )
   recordRates(res)
   const { newAccounts } = JSON.parse(res.body)
-  // console.log(newAccountIds[0], newAccountIds[1])
+  console.log(newAccounts[0], newAccounts[1].identifiers[0].id)
   recordRates(
     http.post(
       'http://localhost:3000/transferBalance',

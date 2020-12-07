@@ -34,6 +34,8 @@ import { AccountType, UserType } from './graphql/schema.types'
 import { expressLambdaProxy } from './lambda/handler'
 import { renderApp } from './render'
 
+const redis = new Redis();
+
 //maximum amount of divation of a curreny in a single transaction.
 let moneyDeviationPara = new Map()
 moneyDeviationPara.set('USD', 20)
@@ -51,7 +53,7 @@ const plaidClient = new plaid.Client({
   env: plaid.environments.sandbox,
 })
 
-const redis = new Redis();
+
 
 const server = new GraphQLServer({
   typeDefs: getSchema(),
@@ -130,7 +132,7 @@ server.express.post(
     await Session.save(session).then(s => console.log('saved session ' + s.id))
 
     // Cache the session upon login
-    redis.set(session.authToken, JSON.stringify(session.user))
+    await redis.set(session.authToken, JSON.stringify(session.user))
 
     const SESSION_DURATION = 30 * 24 * 60 * 60 * 1000 // 30 days
     res
@@ -656,7 +658,7 @@ async function getLoggedInUser(req: any) {
     else {
       const session = await Session.findOne({ where: { authToken }, relations: ['user'] })
       if (session) {
-        redis.set(authToken, JSON.stringify(session.user))
+        await redis.set(authToken, JSON.stringify(session.user))
         return session.user;
       }
     }
@@ -709,7 +711,8 @@ server.express.post('/getExternalAccounts', async (req, res) => {
 server.express.post('/createAccounts', async (req, res) => {
   const externalAccounts = req.body.accounts
   const user = await getLoggedInUser(req);
-  const insertAccountPromises = [];
+  // const insertAccountPromises = [];
+  let newAccounts: any[] = [];
   for (const externalAccount of externalAccounts) {
     if (externalAccount.subtype === 'savings' || externalAccount.subtype == 'checking') {
       const { current: accountBalance, iso_currency_code: accountCurrencyCode } = externalAccount.balances
@@ -727,28 +730,81 @@ server.express.post('/createAccounts', async (req, res) => {
           account.type = '${AccountType.Internal}'`
       )]);
 
+      const insertAccountPromises = []
       if (!externalAccountExists.length) {
-        insertAccountPromises.push(Account.insert({
-          name: `${externalAccountName}`,
-          country: accountCurrencyCode,
-          balance: accountBalance,
-          user,
-          type: AccountType.External,
-        }))
+        insertAccountPromises.push(
+          await Account.insert({
+            name: `${externalAccountName}`,
+            country: accountCurrencyCode,
+            balance: accountBalance,
+            user,
+            type: AccountType.External,
+          })
+        )
 
         if (!internalAccountExists.length) {
-          insertAccountPromises.push(Account.insert({
-            country: accountCurrencyCode,
-            name: `Multicurrency Account - ${accountCurrencyCode}`,
-            balance: 0,
-            user,
-            type: AccountType.Internal,
-          }))
+          insertAccountPromises.push(
+            await Account.insert({
+              country: accountCurrencyCode,
+              name: `Multicurrency Account - ${accountCurrencyCode}`,
+              balance: 0,
+              user,
+              type: AccountType.Internal,
+            })
+          )
         }
       }
+      newAccounts.push(...(await Promise.all(insertAccountPromises)))
     }
   }
-  const newAccounts = await Promise.all(insertAccountPromises);
+  return res.status(200).send({newAccounts})
+})
+
+/**
+ * Creates internal multicurrency and external accounts given accounts from a bank institution
+ */
+server.express.post('/createAccounts', async (req, res) => {
+  const externalAccounts = req.body.accounts
+  const user = await getLoggedInUser(req);
+  let newAccounts: any[] = [];
+  for (const externalAccount of externalAccounts) {
+    if (externalAccount.subtype === 'savings' || externalAccount.subtype == 'checking') {
+      const { current: accountBalance, iso_currency_code: accountCurrencyCode } = externalAccount.balances
+      const externalAccountName = `${externalAccount.name} - ${accountCurrencyCode}`
+      const [externalAccountExists, internalAccountExists] = await Promise.all([query(
+        `SELECT id FROM account
+            WHERE account.userId = ${user.id} and
+            account.country = '${accountCurrencyCode}' and
+            account.name = '${externalAccountName}' and
+            account.type = '${AccountType.External}'`
+      ), query(
+        `SELECT id FROM account
+          WHERE account.userId = ${user.id} and
+          account.country = '${accountCurrencyCode}' and
+          account.type = '${AccountType.Internal}'`
+      )]);
+
+      const insertAccountPromises = []
+      if (!externalAccountExists.length) {
+        insertAccountPromises.push(
+          query(`
+            INSERT INTO account (name, country, userId, balance, type) VALUES ('${externalAccountName}',
+            '${accountCurrencyCode}', '${user.id}', '${accountBalance}', '${AccountType.External}')
+          `)
+        )
+
+        if (!internalAccountExists.length) {
+          insertAccountPromises.push(
+            query(`
+              INSERT INTO account (name, country, userId, balance, type) VALUES ('${`Multicurrency Account - ${accountCurrencyCode}`}',
+              '${accountCurrencyCode}', '${user.id}', '0', '${AccountType.Internal}')`
+            )
+          )
+        }
+      }
+      newAccounts.push(...(await Promise.all(insertAccountPromises)))
+    }
+  }
   return res.status(200).send({newAccounts})
 })
 
@@ -756,25 +812,28 @@ server.express.post('/transferBalance', async (req, res) => {
   const { fromAccountId, toAccountId, amount } = req.body
   await transaction(async () => {
     const [fromAccount, toAccount] = await Promise.all([
-      Account.findOne({ where: { id: fromAccountId } }),
-      Account.findOne({ where: { id: toAccountId } })
-    ]);
+      query(`SELECT id, balance FROM account WHERE id='${fromAccountId}'`),
+      query(`SELECT id, balance FROM account WHERE id='${toAccountId}'`),
+    ])
 
-    if (!fromAccount) {
+    if (!fromAccount.length) {
       return res.status(400).send({ error: 'The account to transfer funds from does not exist!' })
     }
-    if (!toAccount) {
+    if (!toAccount.length) {
       return res.status(400).send({ error: 'The account to transfer funds to does not exist!' })
     }
 
-    if (fromAccount.balance < amount) {
+    if (fromAccount[0].balance < amount) {
       return res.status(400).send({ error: 'Insufficient funds!' })
     }
 
-    fromAccount.balance = +fromAccount.balance - +amount
-    toAccount.balance = +toAccount.balance + +amount
+    const fromAccountBalance = +fromAccount[0].balance - +amount
+    const toAccountBalance = +toAccount[0].balance + +amount
 
-    await Promise.all([fromAccount.save(), toAccount.save()]);
+    await Promise.all([
+      query(`UPDATE account SET balance='${fromAccountBalance}' WHERE id='${fromAccount[0].id}'`),
+      query(`UPDATE account SET balance='${toAccountBalance}' WHERE id='${toAccount[0].id}'`),
+    ])
     return res.sendStatus(200)
   })
 })
