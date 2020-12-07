@@ -122,7 +122,7 @@ server.express.post(
 
     const authToken = uuidv4()
 
-    await Session.delete({ user })
+    Session.delete({ user })
 
     const session = new Session()
     session.authToken = authToken
@@ -709,77 +709,78 @@ server.express.post('/getExternalAccounts', async (req, res) => {
 server.express.post('/createAccounts', async (req, res) => {
   const externalAccounts = req.body.accounts
   const user = await getLoggedInUser(req);
-  const newAccountIds = [];
+  // const insertAccountPromises = [];
+  let newAccounts: any[] = [];
   for (const externalAccount of externalAccounts) {
     if (externalAccount.subtype === 'savings' || externalAccount.subtype == 'checking') {
       const { current: accountBalance, iso_currency_code: accountCurrencyCode } = externalAccount.balances
       const externalAccountName = `${externalAccount.name} - ${accountCurrencyCode}`
-      const externalAccountExists = (
-        await query(
-          `SELECT id FROM account
+      const [externalAccountExists, internalAccountExists] = await Promise.all([query(
+        `SELECT id FROM account
             WHERE account.userId = ${user.id} and
             account.country = '${accountCurrencyCode}' and
             account.name = '${externalAccountName}' and
             account.type = '${AccountType.External}'`
-        )
-      ).length
+      ), query(
+        `SELECT id FROM account
+          WHERE account.userId = ${user.id} and
+          account.country = '${accountCurrencyCode}' and
+          account.type = '${AccountType.Internal}'`
+      )]);
 
-      if (!externalAccountExists) {
-        const insertResponse = await Account.insert({
-          name: `${externalAccountName}`,
-          country: accountCurrencyCode,
-          balance: accountBalance,
-          user,
-          type: AccountType.External,
-        })
-        newAccountIds.push(insertResponse.identifiers[0].id)
-
-
-        const internalAccountExists = (
-          await query(
-            `SELECT id FROM account
-              WHERE account.userId = ${user.id} and
-              account.country = '${accountCurrencyCode}' and
-              account.type = '${AccountType.Internal}'`
-          )
-        ).length
-
-        if (!internalAccountExists) {
-          const insertResponse = await Account.insert({
+      const insertAccountPromises = []
+      if (!externalAccountExists.length) {
+        insertAccountPromises.push(
+          Account.insert({
+            name: `${externalAccountName}`,
             country: accountCurrencyCode,
-            name: `Multicurrency Account - ${accountCurrencyCode}`,
-            balance: 0,
+            balance: accountBalance,
             user,
-            type: AccountType.Internal,
+            type: AccountType.External,
           })
-          newAccountIds.push(insertResponse.identifiers[0].id)
+        )
+
+        if (!internalAccountExists.length) {
+          insertAccountPromises.push(
+            Account.insert({
+              country: accountCurrencyCode,
+              name: `Multicurrency Account - ${accountCurrencyCode}`,
+              balance: 0,
+              user,
+              type: AccountType.Internal,
+            })
+          )
         }
       }
+      newAccounts.push(...(await Promise.all(insertAccountPromises)))
     }
   }
-  return res.status(200).send({newAccountIds})
+  return res.status(200).send({newAccounts})
 })
 
 server.express.post('/transferBalance', async (req, res) => {
   const { fromAccountId, toAccountId, amount } = req.body
   await transaction(async () => {
-    const fromAccount = await Account.findOne({ where: { id: fromAccountId } })
+    const [fromAccount, toAccount] = await Promise.all([
+      Account.findOne({ where: { id: fromAccountId } }),
+      Account.findOne({ where: { id: toAccountId } })
+    ]);
+
     if (!fromAccount) {
       return res.status(400).send({ error: 'The account to transfer funds from does not exist!' })
     }
-    const toAccount = await Account.findOne({ where: { id: toAccountId } })
     if (!toAccount) {
       return res.status(400).send({ error: 'The account to transfer funds to does not exist!' })
     }
+
     if (fromAccount.balance < amount) {
       return res.status(400).send({ error: 'Insufficient funds!' })
     }
 
     fromAccount.balance = +fromAccount.balance - +amount
-    await fromAccount.save()
     toAccount.balance = +toAccount.balance + +amount
-    await toAccount.save()
 
+    await Promise.all([fromAccount.save(), toAccount.save()]);
     return res.sendStatus(200)
   })
 })
