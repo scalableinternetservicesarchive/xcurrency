@@ -63,7 +63,8 @@ export default function () {
     'Content-Type': 'application/json',
   }
   const uniqueUser = `${__VU}-${__ITER}`
-  // recordRates(http.get("http://localhost:3000/app/index"))
+  recordRates(http.get("http://localhost:3000/app/index"))
+  recordRates(http.get("http://localhost:3000/app/signup"))
   recordRates(
     http.post(
       'http://localhost:3000/auth/signup',
@@ -74,6 +75,7 @@ export default function () {
 
   // After signing up, you are redirected to login to the account automatically
   // sleep(2);
+  recordRates(http.get("http://localhost:3000/app/login"))
   recordRates(
     http.post('http://localhost:3000/auth/login', `{"email":"${uniqueUser}@gmail.com","password":"12345678"}`, {
       headers: headers,
@@ -92,6 +94,8 @@ export default function () {
     { headers: headers }
   )
   recordRates(res)
+
+  recordRates(http.get("http://localhost:3000/app/transferBalance"))
   const { newAccountIds } = JSON.parse(res.body)
   // console.log(newAccountIds[0], newAccountIds[1])
   recordRates(
@@ -102,6 +106,12 @@ export default function () {
         headers: headers,
       }
     )
+  )
+
+  recordRates(
+    http.post('http://localhost:3000/auth/logout', {
+      headers: headers,
+    })
   )
 
   // let query = `mutation {

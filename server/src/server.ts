@@ -514,6 +514,7 @@ server.express.post(
     if (authToken) {
       await Session.delete({ authToken })
     }
+    await redis.del(authToken)
     res.status(200).cookie('authToken', '', { maxAge: 0 }).send('Success!')
   })
 )
@@ -650,7 +651,7 @@ async function getLoggedInUser(req: any) {
   if (authToken) {
     const redisResponse = await redis.get(authToken);
     if (redisResponse) {
-      return JSON.parse(redisResponse);
+      return JSON.parse(redisResponse)
     }
     else {
       const session = await Session.findOne({ where: { authToken }, relations: ['user'] })
