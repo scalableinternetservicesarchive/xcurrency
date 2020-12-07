@@ -723,7 +723,6 @@ server.express.post('/getExternalAccounts', async (req, res) => {
       if (session) {
         // Save the access token for future use
         const user = session.user
-        user.plaidAccessToken = accessToken
         await user.save()
         const { accounts } = await plaidClient.getAccounts(accessToken)
         return res.status(200).send(accounts)
