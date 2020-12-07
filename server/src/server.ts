@@ -111,28 +111,26 @@ server.express.post(
     console.log('POST /auth/login')
     const email = req.body.email
     const password = req.body.password
-    const user = await User.createQueryBuilder('user')
-      .select('user.id')
-      .addSelect('user.password')
-      .where('user.email = :email', { email })
-      .getOne()
+    const user = await query(`
+      SELECT * FROM user WHERE email='${email}'
+    `)
 
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    if (!user.length || !(await bcrypt.compare(password, user[0].password))) {
       res.status(403).send('Forbidden')
       return
     }
 
     const authToken = uuidv4()
 
-    Session.delete({ user })
-
-    const session = new Session()
-    session.authToken = authToken
-    session.user = user
-    await Session.save(session).then(s => console.log('saved session ' + s.id))
+    await query(`DELETE FROM session WHERE userId='${user[0].id}'`)
+    await query(`INSERT INTO session (authToken, userId) VALUES('${authToken}', '${user[0].id}')`)
+    // const session = new Session()
+    // session.authToken = authToken
+    // session.userId = user[0].id
+    // await Session.save(session).then(s => console.log('saved session ' + s.id))
 
     // Cache the session upon login
-    await redis.set(session.authToken, JSON.stringify(session.user))
+    await redis.set(authToken, JSON.stringify(user[0]))
 
     const SESSION_DURATION = 30 * 24 * 60 * 60 * 1000 // 30 days
     res
@@ -145,18 +143,22 @@ server.express.post(
 server.express.post(
   '/auth/signup',
   asyncRoute(async (req, res) => {
-    console.log('POST /auth/signup')
+    console.log('POST /auth/signup');
     const { name, email, password } = req.body
-    const user = await User.createQueryBuilder("user").select("user.id")
-      .where("user.email = :email", { email })
-      .getOne();
+    const user = await query(`
+      SELECT * FROM user WHERE email='${email}'
+    `)
 
-    if (user) {
+    if (user.length) {
       console.log('Already found user in the database!')
       return res.sendStatus(400)
     }
+
     const hashedPassword = await bcrypt.hash(password, 10)
-    await User.insert({ name, email, password: hashedPassword })
+    await query(`
+      INSERT INTO user (name, email, password) VALUES ('${name}', '${email}', '${hashedPassword}')
+    `)
+
     console.log('Inserted user into database!')
     return res.status(200).send('Success!')
   })
@@ -703,61 +705,6 @@ server.express.post('/getExternalAccounts', async (req, res) => {
   } catch (e) {
     return res.status(500).send({ error: e.message })
   }
-})
-
-/**
- * Creates internal multicurrency and external accounts given accounts from a bank institution
- */
-server.express.post('/createAccounts', async (req, res) => {
-  const externalAccounts = req.body.accounts
-  const user = await getLoggedInUser(req);
-  // const insertAccountPromises = [];
-  let newAccounts: any[] = [];
-  for (const externalAccount of externalAccounts) {
-    if (externalAccount.subtype === 'savings' || externalAccount.subtype == 'checking') {
-      const { current: accountBalance, iso_currency_code: accountCurrencyCode } = externalAccount.balances
-      const externalAccountName = `${externalAccount.name} - ${accountCurrencyCode}`
-      const [externalAccountExists, internalAccountExists] = await Promise.all([query(
-        `SELECT id FROM account
-            WHERE account.userId = ${user.id} and
-            account.country = '${accountCurrencyCode}' and
-            account.name = '${externalAccountName}' and
-            account.type = '${AccountType.External}'`
-      ), query(
-        `SELECT id FROM account
-          WHERE account.userId = ${user.id} and
-          account.country = '${accountCurrencyCode}' and
-          account.type = '${AccountType.Internal}'`
-      )]);
-
-      const insertAccountPromises = []
-      if (!externalAccountExists.length) {
-        insertAccountPromises.push(
-          await Account.insert({
-            name: `${externalAccountName}`,
-            country: accountCurrencyCode,
-            balance: accountBalance,
-            user,
-            type: AccountType.External,
-          })
-        )
-
-        if (!internalAccountExists.length) {
-          insertAccountPromises.push(
-            await Account.insert({
-              country: accountCurrencyCode,
-              name: `Multicurrency Account - ${accountCurrencyCode}`,
-              balance: 0,
-              user,
-              type: AccountType.Internal,
-            })
-          )
-        }
-      }
-      newAccounts.push(...(await Promise.all(insertAccountPromises)))
-    }
-  }
-  return res.status(200).send({newAccounts})
 })
 
 /**

@@ -18,4 +18,7 @@ export class Session extends BaseEntity {
     length: 36,
   })
   authToken: string
+
+  @Column()
+  userId: number
 }

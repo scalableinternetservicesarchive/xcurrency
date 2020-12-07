@@ -23,9 +23,9 @@ export async function initORM() {
     username: process.env.MYSQL_USER || 'root',
     synchronize: true,
     logging: false,
-    entities: [User, Session, Survey, SurveyQuestion, SurveyAnswer,ExchangeRequest, Account, TransactionRecord],
+    entities: [User, Session, Survey, SurveyQuestion, SurveyAnswer, ExchangeRequest, Account, TransactionRecord],
     extra: {
-      connectionLimit: 5,
+      connectionLimit: 20,
     },
   })
 }
@@ -50,7 +50,7 @@ export async function transactionLock<T>(lockSql: string, cb: (conn: SQL) => Pro
 const pool = createPool({
   ...baseConfig,
   user: 'root',
-  connectionLimit: 16,
+  connectionLimit: 130,
   multipleStatements: true,
 } as any)
 

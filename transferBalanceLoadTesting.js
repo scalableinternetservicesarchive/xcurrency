@@ -63,7 +63,8 @@ export default function () {
     'Content-Type': 'application/json',
   }
   const uniqueUser = `${__VU}-${__ITER}`
-  // recordRates(http.get("http://localhost:3000/app/index"))
+  recordRates(http.get("http://localhost:3000/app/index"))
+  recordRates(http.get("http://localhost:3000/app/signup"))
   recordRates(
     http.post(
       'http://localhost:3000/auth/signup',
@@ -74,6 +75,7 @@ export default function () {
 
   // After signing up, you are redirected to login to the account automatically
   // sleep(2);
+  recordRates(http.get("http://localhost:3000/app/login"))
   recordRates(
     http.post('http://localhost:3000/auth/login', `{"email":"${uniqueUser}@gmail.com","password":"12345678"}`, {
       headers: headers,
@@ -84,20 +86,20 @@ export default function () {
   // recordRates(http.post('http://localhost:3000/getPlaidLinkToken')) this is automatically performed on entering /app/profile (which needs to be optimized eventually)
   // sleep(5);
   recordRates(http.get('http://localhost:3000/app/profile'))
-
-  // sleep(2);
   const res = http.post(
     'http://localhost:3000/createAccounts',
     '{"accounts":[{"account_id":"e3qz8qZNePty5K6bwnLwHXzjPmK9leFLlmp5J","balances":{"available":8113.27,"current":10000,"iso_currency_code":"CAD","limit":null,"unofficial_currency_code":null},"mask":"2163","name":"Chase Savings","official_name":"Chase College Savings","subtype":"savings","type":"depository"},{"account_id":"7mJeWJrzyaHZXWzNp51pUxjvMW76XEtgKxenj","balances":{"available":4939.59,"current":5000,"iso_currency_code":"CAD","limit":null,"unofficial_currency_code":null},"mask":"4409","name":"Chase Checking","official_name":"Chase College Savings","subtype":"checking","type":"depository"}]}',
     { headers: headers }
   )
   recordRates(res)
+
   const { newAccounts } = JSON.parse(res.body)
-  console.log(newAccounts[0], newAccounts[1].identifiers[0].id)
+  recordRates(http.get('http://localhost:3000/app/transferBalance'))
+  // console.log(newAccountIds[0], newAccountIds[1])
   recordRates(
     http.post(
       'http://localhost:3000/transferBalance',
-      `{"fromAccountId":${newAccounts[0].identifiers[0].id},"toAccountId":${newAccounts[1].identifiers[0].id},"amount":5000}`,
+      `{"fromAccountId":${newAccounts[0].insertId},"toAccountId":${newAccounts[1].insertId},"amount":5000}`,
       {
         headers: headers,
       }
