@@ -104,6 +104,12 @@ export default function () {
     )
   )
 
+  recordRates(
+    http.post('http://localhost:3000/auth/logout', {
+      headers: headers,
+    })
+  )
+
   // let query = `mutation {
   //   createUser(input:{
   //     userType:USER
