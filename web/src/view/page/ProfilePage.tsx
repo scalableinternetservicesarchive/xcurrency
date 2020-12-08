@@ -1,9 +1,14 @@
 import { useQuery, useSubscription } from '@apollo/client'
 import { RouteComponentProps } from '@reach/router'
 import * as React from 'react'
-import { useContext } from 'react'
+import { useContext, useEffect } from 'react'
 import { ColorName, Colors } from '../../../../common/src/colors'
-import { FetchAccounts, FetchAccountsVariables } from '../../graphql/query.gen'
+import {
+  AccountsSubscription,
+  AccountsSubscriptionVariables,
+  FetchAccounts,
+  FetchAccountsVariables
+} from '../../graphql/query.gen'
 import { H2 } from '../../style/header'
 import { Spacer } from '../../style/spacer'
 import { style } from '../../style/styled'
@@ -18,6 +23,7 @@ import { PlaidButton } from './PlaidButton'
 interface ProfilePageProps extends RouteComponentProps, AppRouteParams {}
 
 export function ProfilePage(props: ProfilePageProps) {
+  const user = useContext(UserContext).user
   const [linkToken, setLinkToken] = React.useState('')
   if (!linkToken) {
     fetch('/getPlaidLinkToken', {
@@ -33,35 +39,44 @@ export function ProfilePage(props: ProfilePageProps) {
       })
   }
 
-  const user = useContext(UserContext).user
   var { loading, data } = useQuery<FetchAccounts, FetchAccountsVariables>(fetchAccounts, {
     variables: { id: user!.id },
+    // pollInterval: 1000
   })
+
+  const [userAccounts, setUserAccounts] = React.useState(data?.user?.account)
+
+  useEffect(() => {
+    setUserAccounts(data?.user?.account)
+  }, [data])
+
+  const sub = useSubscription<AccountsSubscription, AccountsSubscriptionVariables>(subscribeAccounts, {
+    variables: { userId: user!.id },
+  })
+
+  useEffect(() => {
+    console.log(sub.data);
+    if (sub.data?.accountUpdates) {
+      if (userAccounts) {
+        for (let i = 0; i < userAccounts.length; i++) {
+          if (userAccounts[i]?.name === sub.data?.accountUpdates.name) {
+            userAccounts[i].balance = sub.data?.accountUpdates.balance;
+          }
+        }
+        setUserAccounts(userAccounts);
+      }
+    }
+  }, [sub.data])
+
 
   if (loading) {
     return <div>loading...</div>
   }
+  if (!data || !data.user || !userAccounts) {
+    return <div>no accounts</div>
+  }
 
-  var userAccounts = data?.user?.account!
-
-  const sub = useSubscription<AccountsSubscription, AccountsSubscriptionVariables>(subscribeAccounts, {
-    variables: { userId },
-  })
-  useEffect(() => {
-    if (sub.data?.accountUpdates) {
-      if (sub.data.accountUpdates.userId === user!.id) {
-        var { loading1, data1 } = useQuery<FetchAccounts, FetchAccountsVariables>(fetchAccounts, {
-          variables: { id: user!.id },
-        })
-
-        if (loading1) {
-          return <div>loading...</div>
-        }
-
-        userAccounts = data1?.user?.account!
-      }
-    }
-  }, [sub.data])
+  // console.log(userAccounts)
 
   return (
     <Page>

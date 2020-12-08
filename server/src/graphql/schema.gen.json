@@ -1297,7 +1297,7 @@
             "deprecationReason": null
           },
           {
-            "name": "requestUpdates",
+            "name": "accountUpdates",
             "description": null,
             "args": [
               {
@@ -1317,34 +1317,7 @@
             ],
             "type": {
               "kind": "OBJECT",
-              "name": "ExchangeRequest",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          { 
-            "name": "requestUpdates",
-            "description": null,
-            "args": [
-              { 
-                "name": "userId",
-                "description": null,
-                "type": { 
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Int",
-                    "ofType": null
-                  }
-                },
-                "defaultValue": null
-              }
-            ],
-            "type": { 
-              "kind": "OBJECT",
-              "name": "Accounts",
+              "name": "Account",
               "ofType": null
             },
             "isDeprecated": false,
@@ -1430,19 +1403,15 @@
             "description": null,
             "args": [],
             "type": {
-              "kind": "NON_NULL",
+              "kind": "LIST",
               "name": null,
               "ofType": {
-                "kind": "LIST",
+                "kind": "NON_NULL",
                 "name": null,
                 "ofType": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "Account",
-                    "ofType": null
-                  }
+                  "kind": "OBJECT",
+                  "name": "Account",
+                  "ofType": null
                 }
               }
             },

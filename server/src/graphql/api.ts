@@ -40,9 +40,10 @@ export const graphqlRoot: Resolvers<Context> = {
       return account || null
     },
     exchangeRequests: async (_, { id }) => {
-      const exchangeRequests = await ExchangeRequest.createQueryBuilder('exchange_request').leftJoinAndSelect('exchange_request.user', 'user')
-                                                    .where('user.id = :uId', { uId : id } )
-                                                    .getMany()
+      const exchangeRequests = await ExchangeRequest.createQueryBuilder('exchange_request')
+        .leftJoinAndSelect('exchange_request.user', 'user')
+        .where('user.id = :uId', { uId: id })
+        .getMany()
       return exchangeRequests || null
     },
   },
@@ -89,19 +90,21 @@ export const graphqlRoot: Resolvers<Context> = {
       return user.identifiers[0].id
     },
     createRequest: async (_, { input }) => {
-      const {amountWant, bidRate, amountPay, currentRate,fromCurrency, toCurrency } = input
-      await ExchangeRequest.insert({ amountWant: amountWant, amountPay: amountPay, bidRate: bidRate, currentRate: currentRate,
-      fromCurrency: fromCurrency, toCurrency: toCurrency })
+      const { amountWant, bidRate, amountPay, currentRate, fromCurrency, toCurrency } = input
+      await ExchangeRequest.insert({
+        amountWant: amountWant,
+        amountPay: amountPay,
+        bidRate: bidRate,
+        currentRate: currentRate,
+        fromCurrency: fromCurrency,
+        toCurrency: toCurrency,
+      })
       return true
     },
   },
   Subscription: {
     surveyUpdates: {
       subscribe: (_, { surveyId }, context) => context.pubsub.asyncIterator('SURVEY_UPDATE_' + surveyId),
-      resolve: (payload: any) => payload,
-    },
-    requestUpdates: {
-      subscribe: (_, { userId }, ctx) => ctx.pubsub.asyncIterator('REQUEST_UPDATE_' + userId),
       resolve: (payload: any) => payload,
     },
     accountUpdates: {
