@@ -88,7 +88,6 @@ export function ProfilePage(props: ProfilePageProps) {
         <Table>
           <tbody>
             <Name header="Name:" />
-            <Id header="ID Number:" />
           </tbody>
         </Table>
         <Spacer $h6 />
@@ -124,17 +123,6 @@ function Name(props: { header: string }) {
       <BodyText>
         <TD>{props.header}</TD>
         <TD>{useContext(UserContext).displayName()}</TD>
-      </BodyText>
-    </TR>
-  )
-}
-
-function Id(props: { header: string }) {
-  return (
-    <TR>
-      <BodyText>
-        <TD>{props.header}</TD>
-        <TD>{useContext(UserContext).displayId()}</TD>
       </BodyText>
     </TR>
   )
