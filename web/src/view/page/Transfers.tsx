@@ -37,7 +37,7 @@ export function MyTransfers() {
     return <div>loading...</div>
   }
   if (!data || data.exchangeRequests?.length === 0) {
-    return <div>no surveys</div>
+    return <div>No Transfer History</div>
   }
 
   return (
