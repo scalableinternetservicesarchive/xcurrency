@@ -70,16 +70,22 @@ export const graphqlRoot: Resolvers<Context> = {
       ctx.pubsub.publish('SURVEY_UPDATE_' + surveyId, survey)
       return survey
     },
-    updateBalance: async (_, { input }) => {
+    updateBalance: async (_, { input }, ctx) => {
       const { id, balance } = input
       const account = check(await Account.findOne({ where: { id } }))
       account.balance = balance
       await account.save()
+
+      ctx.pubsub.publish('ACCOUNT_UPDATE_' + account.userId, account)
+
       return true
     },
-    createAccount: async (_, { input }) => {
+    createAccount: async (_, { input }, ctx) => {
       const { country, type, balance, name, userId } = input
       await Account.insert({ country, type, balance, name, userId })
+
+      ctx.pubsub.publish('ACCOUNT_UPDATE_' + userId, account)
+
       return true
     },
     createUser: async (_, { input }) => {
