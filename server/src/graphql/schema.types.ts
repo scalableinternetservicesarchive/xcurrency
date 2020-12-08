@@ -82,6 +82,7 @@ export interface Subscription {
   __typename?: 'Subscription'
   surveyUpdates?: Maybe<Survey>
   requestUpdates?: Maybe<ExchangeRequest>
+  accountUpdates?: Maybe<Accounts>
 }
 
 export interface SubscriptionSurveyUpdatesArgs {
@@ -393,6 +394,13 @@ export type SubscriptionResolvers<
   requestUpdates?: SubscriptionResolver<
     Maybe<ResolversTypes['ExchangeRequest']>,
     'requestUpdates',
+    ParentType,
+    ContextType,
+    RequireFields<SubscriptionRequestUpdatesArgs, 'userId'>
+  >
+  accountUpdates?: SubscriptionResolver<
+    Maybe<ResolversTypes['Accounts']>,
+    'accountUpdates',
     ParentType,
     ContextType,
     RequireFields<SubscriptionRequestUpdatesArgs, 'userId'>

@@ -1,4 +1,4 @@
-import { useQuery } from '@apollo/client'
+import { useQuery, useSubscription } from '@apollo/client'
 import { RouteComponentProps } from '@reach/router'
 import * as React from 'react'
 import { useContext } from 'react'
@@ -34,7 +34,7 @@ export function ProfilePage(props: ProfilePageProps) {
   }
 
   const user = useContext(UserContext).user
-  const { loading, data } = useQuery<FetchAccounts, FetchAccountsVariables>(fetchAccounts, {
+  var { loading, data } = useQuery<FetchAccounts, FetchAccountsVariables>(fetchAccounts, {
     variables: { id: user!.id },
   })
 
@@ -42,7 +42,26 @@ export function ProfilePage(props: ProfilePageProps) {
     return <div>loading...</div>
   }
 
-  const userAccounts = data?.user?.account!
+  var userAccounts = data?.user?.account!
+
+  const sub = useSubscription<AccountsSubscription, AccountsSubscriptionVariables>(subscribeAccounts, {
+    variables: { userId },
+  })
+  useEffect(() => {
+    if (sub.data?.accountUpdates) {
+      if (sub.data.accountUpdates.userId === user!.id) {
+        var { loading1, data1 } = useQuery<FetchAccounts, FetchAccountsVariables>(fetchAccounts, {
+          variables: { id: user!.id },
+        })
+
+        if (loading1) {
+          return <div>loading...</div>
+        }
+
+        userAccounts = data1?.user?.account!
+      }
+    }
+  }, [sub.data])
 
   return (
     <Page>

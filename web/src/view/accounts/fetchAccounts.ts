@@ -20,3 +20,11 @@ export const fetchAccount = gql`
     }
   }
 `
+
+export const subscribeAccounts = gql`
+  subscription AccountsSubscription($userId: Int!) {
+    accountUpdates(userId: $userId) {
+      ...Accounts
+    }
+  }
+`

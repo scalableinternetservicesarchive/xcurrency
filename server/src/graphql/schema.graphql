@@ -52,6 +52,7 @@ type Mutation {
 type Subscription {
   surveyUpdates(surveyId: Int!): Survey
   requestUpdates(userId: Int!): ExchangeRequest
+  accountUpdates(userId: Int!): Accounts
 }
 
 type User {
