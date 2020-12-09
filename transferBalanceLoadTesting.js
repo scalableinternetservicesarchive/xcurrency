@@ -5,18 +5,12 @@ import { Counter, Rate } from 'k6/metrics'
 export const options = {
   scenarios: {
     example_scenario: {
-      // name of the executor to use
-      executor: 'ramping-arrival-rate',
-      // common scenario configuration
-      startRate: '50',
-      timeUnit: '1s',
-      // executor-specific configuration
-      preAllocatedVUs: 50,
-      maxVUs: 100,
-      stages: [
-        { target: 200, duration: '30s' },
-        { target: 0, duration: '30s' },
-      ],
+      executor: 'constant-arrival-rate',
+      rate: 8,
+      timeUnit: '1s', // 1000 iterations per second, i.e. 1000 RPS
+      duration: '30s',
+      preAllocatedVUs: 400, // how large the initial pool of VUs would be
+      maxVUs: 400, // if the preAllocatedVUs are not enough, we can initialize more
     },
   },
 }
