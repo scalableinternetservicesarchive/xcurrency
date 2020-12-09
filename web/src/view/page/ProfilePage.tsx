@@ -44,7 +44,7 @@ export function ProfilePage(props: ProfilePageProps) {
     // pollInterval: 1000
   })
 
-  const [userAccounts, setUserAccounts] = React.useState(data?.user?.account)
+  const [userAccounts, setUserAccounts] = React.useState(data?.user?.account as any)
 
   useEffect(() => {
     setUserAccounts(data?.user?.account)
@@ -58,12 +58,21 @@ export function ProfilePage(props: ProfilePageProps) {
     console.log(sub.data);
     if (sub.data?.accountUpdates) {
       if (userAccounts) {
-        for (let i = 0; i < userAccounts.length; i++) {
-          if (userAccounts[i]?.name === sub.data?.accountUpdates.name) {
-            userAccounts[i].balance = sub.data?.accountUpdates.balance;
+        const clonedUserAccounts: any[] = []
+        userAccounts.forEach((account: any) =>
+          clonedUserAccounts.push({ name: account.name, balance: account.balance })
+        )
+        let isUpdate = false
+        for (let i = 0; i < clonedUserAccounts.length; i++) {
+          if (clonedUserAccounts[i]?.name === sub.data?.accountUpdates.name) {
+            isUpdate = true
+            clonedUserAccounts[i].balance = sub.data?.accountUpdates.balance
           }
         }
-        setUserAccounts(userAccounts);
+        if (!isUpdate) {
+          clonedUserAccounts.push({ name: sub.data.accountUpdates.name, balance: sub.data.accountUpdates.balance })
+        }
+        setUserAccounts(clonedUserAccounts)
       }
     }
   }, [sub.data])

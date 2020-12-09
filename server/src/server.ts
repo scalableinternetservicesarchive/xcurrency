@@ -767,6 +767,12 @@ server.express.post('/createAccounts', async (req, res) => {
               user,
               type: AccountType.External,
             })
+            const insertedExternalAccountId = insertResponse.identifiers[0].id
+            const insertedExternalAccount = await Account.findOne(
+              { id: insertedExternalAccountId },
+              { relations: ['user'] }
+            )
+            pubsub.publish('ACCOUNT_UPDATE_' + insertedExternalAccount?.userId, insertedExternalAccount)
             newAccountIds.push(insertResponse.identifiers[0].id)
 
             const internalAccountExists = (
@@ -786,7 +792,10 @@ server.express.post('/createAccounts', async (req, res) => {
                 user,
                 type: AccountType.Internal,
               })
-              newAccountIds.push(insertResponse.identifiers[0].id)
+              const insertedAccountId = insertResponse.identifiers[0].id
+              const insertedAccount = await Account.findOne({ id: insertedAccountId }, { relations: ['user'] })
+              pubsub.publish('ACCOUNT_UPDATE_' + insertedAccount?.userId, insertedAccount)
+              newAccountIds.push(insertedAccountId)
             }
           }
         }
@@ -800,11 +809,11 @@ server.express.post('/createAccounts', async (req, res) => {
 server.express.post('/transferBalance', async (req, res) => {
   const { fromAccountId, toAccountId, amount } = req.body
   await transaction(async () => {
-    const fromAccount = await Account.findOne({ where: { id: fromAccountId } })
+    const fromAccount = await Account.findOne({ where: { id: fromAccountId }, relations: ['user'] })
     if (!fromAccount) {
       return res.status(400).send({ error: 'The account to transfer funds from does not exist!' })
     }
-    const toAccount = await Account.findOne({ where: { id: toAccountId } })
+    const toAccount = await Account.findOne({ where: { id: toAccountId }, relations: ['user'] })
     if (!toAccount) {
       return res.status(400).send({ error: 'The account to transfer funds to does not exist!' })
     }
@@ -816,6 +825,9 @@ server.express.post('/transferBalance', async (req, res) => {
     await fromAccount.save()
     toAccount.balance = +toAccount.balance + +amount
     await toAccount.save()
+
+    pubsub.publish('ACCOUNT_UPDATE_' + toAccount.userId, toAccount)
+    pubsub.publish('ACCOUNT_UPDATE_' + fromAccount.userId, fromAccount)
 
     return res.sendStatus(200)
   })

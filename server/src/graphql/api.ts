@@ -84,7 +84,7 @@ export const graphqlRoot: Resolvers<Context> = {
       const { country, type, balance, name, userId } = input
       await Account.insert({ country, type, balance, name, userId })
 
-      ctx.pubsub.publish('ACCOUNT_UPDATE_' + userId, account)
+      // ctx.pubsub.publish('ACCOUNT_UPDATE_' + userId, account)
 
       return true
     },
