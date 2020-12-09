@@ -6,17 +6,30 @@ export const options = {
   scenarios: {
     example_scenario: {
       // name of the executor to use
-      executor: 'ramping-arrival-rate',
-      // common scenario configuration
-      startRate: '50',
-      timeUnit: '1s',
-      // executor-specific configuration
-      preAllocatedVUs: 50,
-      maxVUs: 100,
-      stages: [
-        { target: 200, duration: '30s' },
-        { target: 0, duration: '30s' },
-      ],
+      // executor: 'ramping-arrival-rate',
+      // // common scenario configuration
+      // startRate: '50',
+      // timeUnit: '1s',
+      // // executor-specific configuration
+      // preAllocatedVUs: 50,
+      // maxVUs: 100,
+      // stages: [
+      //   { target: 400, duration: '60s' },
+      //   { target: 0, duration: '60s' },
+      // ],
+      executor: 'constant-arrival-rate',
+      rate: 12,
+      timeUnit: '1s', // 1000 iterations per second, i.e. 1000 RPS
+      duration: '30s',
+      preAllocatedVUs: 400, // how large the initial pool of VUs would be
+      maxVUs: 400, // if the preAllocatedVUs are not enough, we can initialize more
+
+      // executor: 'ramping-vus',
+      // startVUs: 0,
+      // stages: [
+      //   { duration: '5s', target: 100 },
+      //   { duration: '5s', target: 0 },
+      // ],
     },
   },
 }
