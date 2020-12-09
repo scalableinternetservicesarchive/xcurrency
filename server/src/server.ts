@@ -198,6 +198,8 @@ async function executeExchange(
     //get the request
     let thisRequest = await ExchangeRequest.findOne({ where: { requestId: requestId.generatedMaps[0].requestId } })
     if (thisRequest) {
+	
+      pubsub.publish('REQUEST_UPDATES_' + requesterUser, requestId)
       const requestbidrate = 1 / exReqData.bidRate
       const exchangeRequests = await ExchangeRequest.createQueryBuilder('exchange_request')
         .leftJoinAndSelect('exchange_request.user', 'user')
