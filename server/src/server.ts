@@ -225,6 +225,31 @@ async function executeExchange(
                       await query('insert into transaction_record (requestId1, requestId2, user1Id, user2Id) values (?,?,?,?)',
                        [requsterUser.id,secondUser.id, real_request.requestId, exReq2.requestId])
                     ])
+
+                    //publish for the subscription
+                    const [updatedUserToAccount, updatedSecondUserToAccount, updatedAdminFromAccount, updatedAdminToAccount] = await Promise.all([
+                      Account.findOne(
+                        { userId: userToAccount.userId, name: userToAccount.name },
+                        { relations: ['user'] }
+                      ),
+                      Account.findOne(
+                        { userId: secondUserToAccount.userId, name: secondUserToAccount.name },
+                        { relations: ['user'] }
+                      ),
+                      Account.findOne(
+                        { userId: adminFromAccount.userId, name: adminFromAccount.name },
+                        { relations: ['user'] }
+                      ),
+                      Account.findOne(
+                        { userId: adminToAccount.userId, name: adminToAccount.name },
+                        { relations: ['user'] }
+                      )
+                    ])
+                    pubsub.publish('ACCOUNT_UPDATE_' + updatedUserToAccount?.userId, updatedUserToAccount)
+                    pubsub.publish('ACCOUNT_UPDATE_' + updatedSecondUserToAccount?.userId, updatedSecondUserToAccount)
+                    pubsub.publish('ACCOUNT_UPDATE_' + updatedAdminFromAccount?.userId, updatedAdminFromAccount)
+                    pubsub.publish('ACCOUNT_UPDATE_' + updatedAdminToAccount?.userId, updatedAdminToAccount)
+
                     }
               }
             }
@@ -315,6 +340,15 @@ server.express.post(
                 res.status(200).send(JSON.stringify({ success: 1, notEnoughMoney: 0, noAccount: 0 }))
                 userAccount.balance = Number(userAccount.balance) - Number(exReqData.amountPay)
                 await query('update account set account.balance = ? where account.userId = ? and account.country = ?',[userAccount.balance, userAccount.userId, userAccount.country])
+
+                //publish for the subscription
+                const [updatedUserAccount] = await Promise.all([
+                  Account.findOne(
+                    { userId: userAccount.userId, name: userAccount.name },
+                    { relations: ['user'] }
+                  )
+                ])
+                pubsub.publish('ACCOUNT_UPDATE_' + updatedUserAccount?.userId, updatedUserAccount)
 
                 //this is where insert the exchange request from user
                 await query('INSERT INTO exchange_request (exchange_request.amountWant, exchange_request.amountPay, exchange_request.bidRate,exchange_request.currentRate, exchange_request.fromCurrency, exchange_request.toCurrency, exchange_request.userId, exchange_request.check) VALUES(?,?,?,?,?,?,?,?)',
