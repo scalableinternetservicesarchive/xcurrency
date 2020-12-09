@@ -19,3 +19,12 @@ export const fetchExchangeRequests = gql`
     }
   }
   ${fragmentExchangeRequest} `
+
+export const subscribeRequests = gql`
+  subscription RequestSubscription($userId: Int!) {
+    requestUpdates(userId: $userId) {
+      ...ExchangeRequest
+    }
+  }
+  ${fragmentExchangeRequest}
+`
