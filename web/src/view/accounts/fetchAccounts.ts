@@ -41,12 +41,3 @@ export const subscribeAccounts = gql`
   ${fragmentAccount}
 `
 
-// export const subscribeSurveys = gql`
-//   subscription SurveySubscription($surveyId: Int!) {
-//     surveyUpdates(surveyId: $surveyId) {
-//       ...Survey
-//     }
-//   }
-//   ${fragmentSurvey}
-//   ${fragmentSurveyQuestion}
-// `

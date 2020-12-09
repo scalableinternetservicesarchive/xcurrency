@@ -117,5 +117,9 @@ export const graphqlRoot: Resolvers<Context> = {
       subscribe: (_, { userId }, ctx) => ctx.pubsub.asyncIterator('ACCOUNT_UPDATE_' + userId),
       resolve: (payload: any) => payload,
     },
+    requestUpdates: {
+      subscribe: (_, { userId }, ctx) => ctx.pubsub.asyncIterator('REQUEST_UPDATE_' + userId),
+      resolve: (payload: any) => payload,
+    },
   },
 }
