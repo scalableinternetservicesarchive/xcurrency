@@ -1,14 +1,19 @@
-import { useQuery } from '@apollo/client'
+import { useQuery, useSubscription } from '@apollo/client'
 import { RouteComponentProps } from '@reach/router'
 import * as React from 'react'
-import { useContext } from 'react'
+import { useContext, useEffect } from 'react'
 import { ColorName, Colors } from '../../../../common/src/colors'
-import { FetchAccounts, FetchAccountsVariables } from '../../graphql/query.gen'
+import {
+  AccountsSubscription,
+  AccountsSubscriptionVariables,
+  FetchAccounts,
+  FetchAccountsVariables
+} from '../../graphql/query.gen'
 import { H2 } from '../../style/header'
 import { Spacer } from '../../style/spacer'
 import { style } from '../../style/styled'
 import { BodyText, IntroText } from '../../style/text'
-import { fetchAccounts } from '../accounts/fetchAccounts'
+import { fetchAccounts, subscribeAccounts } from '../accounts/fetchAccounts'
 import { UserContext } from '../auth/user'
 import { AppRouteParams } from '../nav/route'
 import { toastErr } from '../toast/toast'
@@ -18,6 +23,7 @@ import { PlaidButton } from './PlaidButton'
 interface ProfilePageProps extends RouteComponentProps, AppRouteParams {}
 
 export function ProfilePage(props: ProfilePageProps) {
+  const user = useContext(UserContext).user
   const [linkToken, setLinkToken] = React.useState('')
   if (!linkToken) {
     fetch('/getPlaidLinkToken', {
@@ -33,16 +39,53 @@ export function ProfilePage(props: ProfilePageProps) {
       })
   }
 
-  const user = useContext(UserContext).user
-  const { loading, data } = useQuery<FetchAccounts, FetchAccountsVariables>(fetchAccounts, {
+  var { loading, data } = useQuery<FetchAccounts, FetchAccountsVariables>(fetchAccounts, {
     variables: { id: user!.id },
+    // pollInterval: 1000
   })
+
+  const [userAccounts, setUserAccounts] = React.useState(data?.user?.account as any)
+
+  useEffect(() => {
+    setUserAccounts(data?.user?.account)
+  }, [data])
+
+  const sub = useSubscription<AccountsSubscription, AccountsSubscriptionVariables>(subscribeAccounts, {
+    variables: { userId: user!.id },
+  })
+
+  useEffect(() => {
+    console.log(sub.data);
+    if (sub.data?.accountUpdates) {
+      if (userAccounts) {
+        const clonedUserAccounts: any[] = []
+        userAccounts.forEach((account: any) =>
+          clonedUserAccounts.push({ name: account.name, balance: account.balance })
+        )
+        let isUpdate = false
+        for (let i = 0; i < clonedUserAccounts.length; i++) {
+          if (clonedUserAccounts[i]?.name === sub.data?.accountUpdates.name) {
+            isUpdate = true
+            clonedUserAccounts[i].balance = sub.data?.accountUpdates.balance
+          }
+        }
+        if (!isUpdate) {
+          clonedUserAccounts.push({ name: sub.data.accountUpdates.name, balance: sub.data.accountUpdates.balance })
+        }
+        setUserAccounts(clonedUserAccounts)
+      }
+    }
+  }, [sub.data])
+
 
   if (loading) {
     return <div>loading...</div>
   }
+  if (!data || !data.user || !userAccounts) {
+    return <div>no accounts</div>
+  }
 
-  const userAccounts = data?.user?.account!
+  // console.log(userAccounts)
 
   return (
     <Page>
@@ -54,7 +97,6 @@ export function ProfilePage(props: ProfilePageProps) {
         <Table>
           <tbody>
             <Name header="Name:" />
-            <Id header="ID Number:" />
           </tbody>
         </Table>
         <Spacer $h6 />
@@ -90,17 +132,6 @@ function Name(props: { header: string }) {
       <BodyText>
         <TD>{props.header}</TD>
         <TD>{useContext(UserContext).displayName()}</TD>
-      </BodyText>
-    </TR>
-  )
-}
-
-function Id(props: { header: string }) {
-  return (
-    <TR>
-      <BodyText>
-        <TD>{props.header}</TD>
-        <TD>{useContext(UserContext).displayId()}</TD>
       </BodyText>
     </TR>
   )

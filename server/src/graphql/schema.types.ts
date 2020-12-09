@@ -81,14 +81,14 @@ export interface MutationCreateUserArgs {
 export interface Subscription {
   __typename?: 'Subscription'
   surveyUpdates?: Maybe<Survey>
-  requestUpdates?: Maybe<ExchangeRequest>
+  accountUpdates?: Maybe<Account>
 }
 
 export interface SubscriptionSurveyUpdatesArgs {
   surveyId: Scalars['Int']
 }
 
-export interface SubscriptionRequestUpdatesArgs {
+export interface SubscriptionAccountUpdatesArgs {
   userId: Scalars['Int']
 }
 
@@ -98,7 +98,7 @@ export interface User {
   userType: UserType
   email: Scalars['String']
   name: Scalars['String']
-  account: Array<Account>
+  account?: Maybe<Array<Account>>
 }
 
 export interface Account {
@@ -390,12 +390,12 @@ export type SubscriptionResolvers<
     ContextType,
     RequireFields<SubscriptionSurveyUpdatesArgs, 'surveyId'>
   >
-  requestUpdates?: SubscriptionResolver<
-    Maybe<ResolversTypes['ExchangeRequest']>,
-    'requestUpdates',
+  accountUpdates?: SubscriptionResolver<
+    Maybe<ResolversTypes['Account']>,
+    'accountUpdates',
     ParentType,
     ContextType,
-    RequireFields<SubscriptionRequestUpdatesArgs, 'userId'>
+    RequireFields<SubscriptionAccountUpdatesArgs, 'userId'>
   >
 }
 
@@ -407,7 +407,7 @@ export type UserResolvers<
   userType?: Resolver<ResolversTypes['UserType'], ParentType, ContextType>
   email?: Resolver<ResolversTypes['String'], ParentType, ContextType>
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>
-  account?: Resolver<Array<ResolversTypes['Account']>, ParentType, ContextType>
+  account?: Resolver<Maybe<Array<ResolversTypes['Account']>>, ParentType, ContextType>
   __isTypeOf?: IsTypeOfResolverFn<ParentType>
 }
 

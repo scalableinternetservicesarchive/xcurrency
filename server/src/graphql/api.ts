@@ -40,9 +40,10 @@ export const graphqlRoot: Resolvers<Context> = {
       return account || null
     },
     exchangeRequests: async (_, { id }) => {
-      const exchangeRequests = await ExchangeRequest.createQueryBuilder('exchange_request').leftJoinAndSelect('exchange_request.user', 'user')
-                                                    .where('user.id = :uId', { uId : id } )
-                                                    .getMany()
+      const exchangeRequests = await ExchangeRequest.createQueryBuilder('exchange_request')
+        .leftJoinAndSelect('exchange_request.user', 'user')
+        .where('user.id = :uId', { uId: id })
+        .getMany()
       return exchangeRequests || null
     },
   },
@@ -69,16 +70,22 @@ export const graphqlRoot: Resolvers<Context> = {
       ctx.pubsub.publish('SURVEY_UPDATE_' + surveyId, survey)
       return survey
     },
-    updateBalance: async (_, { input }) => {
+    updateBalance: async (_, { input }, ctx) => {
       const { id, balance } = input
       const account = check(await Account.findOne({ where: { id } }))
       account.balance = balance
       await account.save()
+
+      ctx.pubsub.publish('ACCOUNT_UPDATE_' + account.userId, account)
+
       return true
     },
-    createAccount: async (_, { input }) => {
+    createAccount: async (_, { input }, ctx) => {
       const { country, type, balance, name, userId } = input
       await Account.insert({ country, type, balance, name, userId })
+
+      // ctx.pubsub.publish('ACCOUNT_UPDATE_' + userId, account)
+
       return true
     },
     createUser: async (_, { input }) => {
@@ -89,9 +96,15 @@ export const graphqlRoot: Resolvers<Context> = {
       return user.identifiers[0].id
     },
     createRequest: async (_, { input }) => {
-      const {amountWant, bidRate, amountPay, currentRate,fromCurrency, toCurrency } = input
-      await ExchangeRequest.insert({ amountWant: amountWant, amountPay: amountPay, bidRate: bidRate, currentRate: currentRate,
-      fromCurrency: fromCurrency, toCurrency: toCurrency })
+      const { amountWant, bidRate, amountPay, currentRate, fromCurrency, toCurrency } = input
+      await ExchangeRequest.insert({
+        amountWant: amountWant,
+        amountPay: amountPay,
+        bidRate: bidRate,
+        currentRate: currentRate,
+        fromCurrency: fromCurrency,
+        toCurrency: toCurrency,
+      })
       return true
     },
   },
@@ -100,8 +113,8 @@ export const graphqlRoot: Resolvers<Context> = {
       subscribe: (_, { surveyId }, context) => context.pubsub.asyncIterator('SURVEY_UPDATE_' + surveyId),
       resolve: (payload: any) => payload,
     },
-    requestUpdates: {
-      subscribe: (_, { userId }, ctx) => ctx.pubsub.asyncIterator('REQUEST_UPDATE_' + userId),
+    accountUpdates: {
+      subscribe: (_, { userId }, ctx) => ctx.pubsub.asyncIterator('ACCOUNT_UPDATE_' + userId),
       resolve: (payload: any) => payload,
     },
   },

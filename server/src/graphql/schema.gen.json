@@ -1297,7 +1297,11 @@
             "deprecationReason": null
           },
           {
+<<<<<<< HEAD
             "name": "requestUpdates",
+=======
+            "name": "accountUpdates",
+>>>>>>> subscription_maybe
             "description": null,
             "args": [
               {
@@ -1317,7 +1321,11 @@
             ],
             "type": {
               "kind": "OBJECT",
+<<<<<<< HEAD
               "name": "ExchangeRequest",
+=======
+              "name": "Account",
+>>>>>>> subscription_maybe
               "ofType": null
             },
             "isDeprecated": false,
@@ -1403,19 +1411,15 @@
             "description": null,
             "args": [],
             "type": {
-              "kind": "NON_NULL",
+              "kind": "LIST",
               "name": null,
               "ofType": {
-                "kind": "LIST",
+                "kind": "NON_NULL",
                 "name": null,
                 "ofType": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "Account",
-                    "ofType": null
-                  }
+                  "kind": "OBJECT",
+                  "name": "Account",
+                  "ofType": null
                 }
               }
             },

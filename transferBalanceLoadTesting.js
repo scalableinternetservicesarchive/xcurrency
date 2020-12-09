@@ -21,7 +21,6 @@ export const options = {
   },
 }
 
-
 const count200 = new Counter('status_code_2xx')
 const count300 = new Counter('status_code_3xx')
 const count400 = new Counter('status_code_4xx')
@@ -49,7 +48,6 @@ function recordRates(res) {
   }
 }
 
-
 export default function () {
   // console.log(`VU: ${__VU}  -  ITER: ${__ITER}`)
 
@@ -63,8 +61,8 @@ export default function () {
     'Content-Type': 'application/json',
   }
   const uniqueUser = `${__VU}-${__ITER}`
-  recordRates(http.get("http://localhost:3000/app/index"))
-  recordRates(http.get("http://localhost:3000/app/signup"))
+  recordRates(http.get('http://localhost:3000/app/index'))
+  recordRates(http.get('http://localhost:3000/app/signup'))
   recordRates(
     http.post(
       'http://localhost:3000/auth/signup',
@@ -75,7 +73,7 @@ export default function () {
 
   // After signing up, you are redirected to login to the account automatically
   // sleep(2);
-  recordRates(http.get("http://localhost:3000/app/login"))
+  recordRates(http.get('http://localhost:3000/app/login'))
   recordRates(
     http.post('http://localhost:3000/auth/login', `{"email":"${uniqueUser}@gmail.com","password":"12345678"}`, {
       headers: headers,
@@ -125,4 +123,3 @@ export default function () {
 
   // console.log(res.body)
 }
-
