@@ -1297,11 +1297,7 @@
             "deprecationReason": null
           },
           {
-<<<<<<< HEAD
-            "name": "requestUpdates",
-=======
             "name": "accountUpdates",
->>>>>>> subscription_maybe
             "description": null,
             "args": [
               {
@@ -1321,11 +1317,7 @@
             ],
             "type": {
               "kind": "OBJECT",
-<<<<<<< HEAD
-              "name": "ExchangeRequest",
-=======
               "name": "Account",
->>>>>>> subscription_maybe
               "ofType": null
             },
             "isDeprecated": false,

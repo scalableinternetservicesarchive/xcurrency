@@ -718,6 +718,7 @@ server.express.post('/createAccounts', async (req, res) => {
     if (externalAccount.subtype === 'savings' || externalAccount.subtype == 'checking') {
       const { current: accountBalance, iso_currency_code: accountCurrencyCode } = externalAccount.balances
       const externalAccountName = `${externalAccount.name} - ${accountCurrencyCode}`
+      const internalAccountName = `Multicurrency Account - ${accountCurrencyCode}`;
       const [externalAccountExists, internalAccountExists] = await Promise.all([query(
         `SELECT id FROM account
             WHERE account.userId = ${user.id} and
@@ -739,29 +740,29 @@ server.express.post('/createAccounts', async (req, res) => {
             '${accountCurrencyCode}', '${user.id}', '${accountBalance}', '${AccountType.External}')
           `)
         )
-        const externalAccount = (await query(`
-          SELECT * FROM account JOIN users on users.id=account.userId
-          WHERE userId='${user.id}' and name='${externalAccountName}'`
-        ))[0];
-        pubsub.publish('ACCOUNT_UPDATE_' + externalAccount.userId, externalAccount)
 
         if (!internalAccountExists.length) {
-          const internalAccountName = `Multicurrency Account - ${accountCurrencyCode}`;
           insertAccountPromises.push(
             query(`
               INSERT INTO account (name, country, userId, balance, type) VALUES ('${internalAccountName}',
               '${accountCurrencyCode}', '${user.id}', '0', '${AccountType.Internal}')`
             )
           )
-
-          const internalAccount = (await query(`
-            SELECT * FROM account JOIN users on users.id=account.userId
-            WHERE userId='${user.id}' and name='${internalAccountName}'`
-          ))[0];
-          pubsub.publish('ACCOUNT_UPDATE_' + internalAccount.userId, internalAccount)
         }
       }
       newAccounts.push(...(await Promise.all(insertAccountPromises)))
+      const [insertedExternalAccount, insertedInternalAccount] = await Promise.all([
+        Account.findOne(
+          { userId: user.id, name: externalAccountName },
+          { relations: ['user'] }
+        ),
+        Account.findOne(
+          { userId: user.id, name: internalAccountName },
+          { relations: ['user'] }
+        )
+      ])
+      pubsub.publish('ACCOUNT_UPDATE_' + insertedExternalAccount?.userId, insertedExternalAccount)
+      pubsub.publish('ACCOUNT_UPDATE_' + insertedInternalAccount?.userId, insertedInternalAccount)
     }
   }
   return res.status(200).send({newAccounts})
@@ -793,8 +794,14 @@ server.express.post('/transferBalance', async (req, res) => {
       query(`UPDATE account SET balance='${fromAccountBalance}' WHERE id='${fromAccount[0].id}'`),
       query(`UPDATE account SET balance='${toAccountBalance}' WHERE id='${toAccount[0].id}'`),
     ])
-    pubsub.publish('ACCOUNT_UPDATE_' + toAccount.userId, toAccount)
-    pubsub.publish('ACCOUNT_UPDATE_' + fromAccount.userId, fromAccount)
+
+    const [updatedFromAccount, updatedToAccount] = await Promise.all([
+      Account.findOne({ id: fromAccountId }, { relations: ['user'] }),
+      Account.findOne({ id: toAccountId }, { relations: ['user'] }),
+    ])
+
+    pubsub.publish('ACCOUNT_UPDATE_' + updatedFromAccount?.userId, updatedFromAccount)
+    pubsub.publish('ACCOUNT_UPDATE_' + updatedToAccount?.userId, updatedToAccount)
 
     return res.sendStatus(200)
   })
