@@ -25,7 +25,7 @@ export async function initORM() {
     logging: false,
     entities: [User, Session, Survey, SurveyQuestion, SurveyAnswer,ExchangeRequest, Account, TransactionRecord],
     extra: {
-      connectionLimit: 5,
+      connectionLimit: 40,
     },
   })
 }
@@ -47,10 +47,16 @@ export async function transactionLock<T>(lockSql: string, cb: (conn: SQL) => Pro
   return txn(lockSql, cb)
 }
 
+export async function getSQLConnection() {
+  const conn = await getConnection()
+  return new SQL(conn)
+}
+
 const pool = createPool({
   ...baseConfig,
   user: 'root',
-  connectionLimit: 16,
+  //connectionLimit: 16,
+  connectionLimit: 60,
   multipleStatements: true,
 } as any)
 

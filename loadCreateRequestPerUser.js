@@ -51,7 +51,7 @@ export default function () {
   const paramsLogin = { headers: { 'Content-Type': 'application/json' } };
   const res = http.post('http://localhost:3000/auth/login', payloadLogin, paramsLogin);
   recordRates(res)
-  sleep(0.1)
+  sleep(1)
   //each logged in user, create multiple requests
   const amountWant = Math.random() * 20;
   const bidRateArrUSDTOCAD = [1.0,1.2,1.5]
@@ -78,7 +78,7 @@ export default function () {
   fromCurrency: fromCountry, toCurrency: toCountry })
   const res1 = http.post('http://localhost:3000/confirm-request', requestPayload, paramsLogin)
   recordRates(res1)
-  sleep(0.1)
+  sleep(1)
   const res2 = http.post('http://localhost:3000/auth/logout', {}, paramsLogin)
   recordRates(res2)
 }

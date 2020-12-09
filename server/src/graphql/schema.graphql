@@ -88,6 +88,7 @@ type ExchangeRequest {
   currentRate: Float!
   fromCurrency: String!
   toCurrency: String!
+  check: Boolean
 }
 
 #type Transaction {
