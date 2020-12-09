@@ -128,6 +128,7 @@ export interface ExchangeRequest {
   currentRate: Scalars['Float']
   fromCurrency: Scalars['String']
   toCurrency: Scalars['String']
+  check: Scalars['Boolean']
 }
 
 export enum UserType {

@@ -32,6 +32,9 @@ export class ExchangeRequest extends BaseEntity implements GraphqlExReq {
     })
     toCurrency: string
 
+    @Column()
+    check: boolean
+
     @ManyToOne(()=>User, user => user.exchangeRequest)
     user: User
 }

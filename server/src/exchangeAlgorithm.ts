@@ -1,6 +1,5 @@
 import { ExchangeRequest } from './entities/ExchangeRequest';
 //const role = Object.freeze({"buyer": 1, "seller": 2})
-
 export class exReq {
   userId : number
   bidRate : number
@@ -19,20 +18,20 @@ export class exReq {
   }
 }
 
-export async function checkForMatch(exchangeRequest :exReq, exchangeRequests : ExchangeRequest []) {
-  let eligibleTransac = new Map()
+export async function checkForMatch(exchangeRequest : exReq, exchangeRequests : ExchangeRequest []) {
+  //let eligibleTransac = new Map()
     if (exchangeRequests) {
       for (let i = 0; i< exchangeRequests.length; i++){
-        const middleRate = ((((1/exchangeRequests[i].bidRate) - exchangeRequest.bidRate)/2) + exchangeRequest.bidRate);
-        //console.log(middleRate)
-        let total_want = (Number((exchangeRequests[i].amountWant * middleRate)) + Number(exchangeRequest.amountWant))
-        let total_pay = (Number((exchangeRequest.amountPay * middleRate)) + Number(exchangeRequests[i].amountPay))
+        let middleRate = Number((((1/ Number(exchangeRequests[i].bidRate)) - Number(exchangeRequest.bidRate))/2) + Number(exchangeRequest.bidRate));
+        let total_want = (Number( Number(exchangeRequests[i].amountWant) * middleRate) + Number(exchangeRequest.amountWant))
+        let total_pay = (Number(( Number(exchangeRequest.amountPay) * middleRate)) + Number(exchangeRequests[i].amountPay))
         let profit = (total_pay - total_want)
         if (profit >= 0) {
-          eligibleTransac.set(exchangeRequests[i].requestId, profit)
+          return [exchangeRequests[i].requestId, profit]
         }
       }
     }
+    /* this is to choose the least profit. Therefore, more matches available
     if (eligibleTransac) {
       eligibleTransac = new Map([...eligibleTransac.entries()].sort((a,b)=>a[1]-b[1]))
       const firstValue = eligibleTransac.values().next().value;
@@ -41,6 +40,6 @@ export async function checkForMatch(exchangeRequest :exReq, exchangeRequests : E
       //console.log(firstKey)
       return [firstKey,firstValue]
     }
+    */
   return [null,null]
-
 }

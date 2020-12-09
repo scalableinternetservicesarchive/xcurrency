@@ -25,7 +25,6 @@ import { initORM, query, transaction } from './db/sql'
 import { Account } from './entities/Accounts'
 import { ExchangeRequest } from './entities/ExchangeRequest'
 import { Session } from './entities/Session'
-import { TransactionRecord } from './entities/TransactionRecord'
 import { User } from './entities/User'
 import { checkForMatch, exReq } from './exchangeAlgorithm'
 import { getSchema, graphqlRoot, pubsub } from './graphql/api'
@@ -164,340 +163,176 @@ server.express.post(
   })
 )
 
-/*
-function existAccount(user : User, country : string){
-  for (let i = 0; i < user.account.length; i++) {
-    if (user.account[i].country == country) {
-        //have account
-        return i
-    }
-  }
-  return -1
-}
-*/
 
 async function executeExchange(
   currentRate: number,
-  requesterUser: User,
+  requsterUser : User,
   userAccount: Account,
   userToAccount: Account,
-  exReqData: exReq
+  request: exReq,
+  real_request: ExchangeRequest
 ) {
-  //store this request into ExchangeRequest table
-  /*await transaction( async () => {
+      const requestbidrate = Number(1 / request.bidRate);
+      const exchangeRequests = await query('SELECT * from exchange_request where fromCurrency = ? and toCurrency = ? and bidRate <= ? and amountPay <= ? and amountPay >= ? and amountWant <= ? and amountWant >= ?',
+       [request.toCurrency,
+        request.fromCurrency,
+        requestbidrate,
+         Number(Number(moneyDeviationPara.get(request.toCurrency)) + Number(request.amountWant)),
+        Number(Number(request.amountWant) - Number(moneyDeviationPara.get(request.toCurrency))),
+        Number(Number(moneyDeviationPara.get(request.fromCurrency)) + Number(request.amountPay)),
+        Number(Number(request.amountPay) - Number(moneyDeviationPara.get(request.fromCurrency)))])
+      const match = await checkForMatch(request, exchangeRequests)
 
-  })*/
-    const requestId = await ExchangeRequest.insert({
-      amountWant: exReqData.amountWant,
-      amountPay: exReqData.amountPay,
-      bidRate: exReqData.bidRate,
-      currentRate: currentRate,
-      fromCurrency: exReqData.fromCurrency,
-      toCurrency: exReqData.toCurrency,
-      user: requesterUser,
-    })
-    //get the request
-    let thisRequest = await ExchangeRequest.findOne({ where: { requestId: requestId.generatedMaps[0].requestId } })
-    if (thisRequest) {
-      const requestbidrate = 1 / exReqData.bidRate
-      const exchangeRequests = await ExchangeRequest.createQueryBuilder('exchange_request')
-        .leftJoinAndSelect('exchange_request.user', 'user')
-        .where('fromCurrency = :requestToCountry', { requestToCountry: exReqData.toCurrency })
-        .andWhere('toCurrency = :requestFromCurrency', { requestFromCurrency: exReqData.fromCurrency })
-        .andWhere('bidRate <= :requestBidRate', { requestBidRate: requestbidrate })
-        .andWhere('amountPay <= :discrepency', {
-          discrepency: Number(Number(moneyDeviationPara.get(exReqData.toCurrency)) + Number(exReqData.amountWant)),
-        })
-        .andWhere('amountPay >= :discrepency1', {
-          discrepency1: Number(Number(exReqData.amountWant) - Number(moneyDeviationPara.get(exReqData.toCurrency))),
-        })
-        .andWhere('amountWant <= :discrepency2', {
-          discrepency2: Number(Number(moneyDeviationPara.get(exReqData.fromCurrency)) + Number(exReqData.amountPay)),
-        })
-        .andWhere('amountWant >= :discrepency3', {
-          discrepency3: Number(Number(exReqData.amountPay) - Number(moneyDeviationPara.get(exReqData.fromCurrency))),
-        })
-        .getMany()
-      const match = await checkForMatch(exReqData, exchangeRequests)
       if (match[0]) {
         //update admin account
-        let adminUser = await User.findOne({ where: { userType: UserType.Admin } })
-        let adminToAccount = await Account.findOne({
-          where: { user: adminUser, country: exReqData.toCurrency, type: AccountType.Internal },
-        })
-        let adminFromAccount = await Account.findOne({
-          where: { user: adminUser, country: exReqData.fromCurrency, type: AccountType.Internal },
-        })
-        let exReq2 = await ExchangeRequest.findOne({ where: { requestId: match[0] } })
-        let secondUser = await User.createQueryBuilder('user')
-          .leftJoinAndSelect('user.exchangeRequest', 'exchange_request')
-          .where(' exchange_request.requestId = :exId ', { exId: match[0] })
-          .getOne()
-        let secondUserFromAccount = await Account.createQueryBuilder('account')
-          .leftJoinAndSelect('account.user', 'user')
-          .where(' user.id = :uId', { uId: secondUser?.id })
-          .andWhere(' country = :fromCountry ', { fromCountry: exReq2?.fromCurrency })
-          .andWhere('type = :accountType', { accountType: AccountType.Internal })
-          .getOne()
-        let secondUserToAccount = await Account.createQueryBuilder('account')
-          .leftJoinAndSelect('account.user', 'user')
-          .where(' user.id = :uId', { uId: secondUser?.id })
-          .andWhere(' country = :toCountry ', { toCountry: exReq2?.toCurrency })
-          .andWhere('type = :accountType', { accountType: AccountType.Internal })
-          .getOne()
+        let adminUser_arr = await query('SELECT * from user where userType = ? LIMIT 1', [UserType.Admin])
+        let adminUser = adminUser_arr[0]
+        // parallel queries with Promise.all
+        let [adminToAccount_arr, adminFromAccount_arr, exReq2_arr, secondUser_arr ]  =  await Promise.all([
+        query('SELECT * from account where userId = ? and country = ? and type = ?', [adminUser.id,request.toCurrency,AccountType.Internal]),
+        query('SELECT * from account where userId = ? and country = ? and type = ?', [adminUser.id,request.fromCurrency,AccountType.Internal]),
+        query('SELECT * from exchange_request where requestId = ?', [match[0]]),
+        query('SELECT * from user left join exchange_request on user.id = exchange_request.userId where exchange_request.requestId = ?', [match[0]])
+      ])
+      let adminToAccount = adminToAccount_arr[0]
+      let adminFromAccount = adminFromAccount_arr[0]
+      let exReq2 = exReq2_arr[0]
+      let secondUser = secondUser_arr[0]
+      // end parrallel queries
+      let secondUserToAccount_arr = await query('SELECT * from account where account.userId = ? and country = ? and type = ?', [secondUser.id, exReq2.toCurrency, AccountType.Internal])
+      let secondUserToAccount = secondUserToAccount_arr[0]
         if (adminToAccount) {
           if (adminFromAccount) {
             if (exReq2) {
               if (secondUser) {
-                if (secondUserFromAccount) {
                   if (secondUserToAccount) {
                     //update admin account
                     adminFromAccount.balance =
-                      Number(adminFromAccount.balance) + Number(exReqData.amountPay) - Number(exReq2.amountWant)
+                      Number(adminFromAccount.balance) + Number(request.amountPay) - Number(exReq2.amountWant)
                     adminToAccount.balance =
-                      Number(adminToAccount.balance) - Number(exReqData.amountWant) + Number(exReq2.amountPay)
+                      Number(adminToAccount.balance) - Number(request.amountWant) + Number(exReq2.amountPay)
                     //update user1 (requester) account
-                    userToAccount.balance = Number(userToAccount.balance) + Number(exReqData.amountWant)
+                    userToAccount.balance = Number(userToAccount.balance) + Number(request.amountWant)
                     //update user2 account
-                    secondUserFromAccount.balance = Number(secondUserFromAccount.balance) - Number(exReq2.amountPay)
                     secondUserToAccount.balance = Number(secondUserToAccount.balance) + Number(exReq2.amountWant)
-                    await Account.save(userAccount)
-                    await Account.save(userToAccount)
-                    await Account.save(secondUserFromAccount)
-                    await Account.save(secondUserToAccount)
-                    await Account.save(adminFromAccount)
-                    await Account.save(adminToAccount)
-                    //store transaction in transaction history
-                    await TransactionRecord.insert({
-                      user1Id: requesterUser.id,
-                      user2Id: secondUser.id,
-                      requestId1: thisRequest.requestId,
-                      requestId2: exReq2.requestId,
-                    })
-                    //delete requests
-                    await ExchangeRequest.createQueryBuilder()
-                      .delete()
-                      .from(ExchangeRequest)
-                      .where({ requestId: thisRequest.requestId })
-                      .execute()
-                    await ExchangeRequest.createQueryBuilder()
-                      .delete()
-                      .from(ExchangeRequest)
-                      .where({ requestId: exReq2.requestId })
-                      .execute()
-                  }
-                }
+                    await Promise.all([
+                      await query('update account set balance = ? where userId = ? and country = ?',[userToAccount.balance, userToAccount.userId, userToAccount.country]),
+                      await query('update account set balance = ? where userId = ? and country = ?', [secondUserToAccount.balance, secondUserToAccount.userId, secondUserToAccount.country]),
+                      await query('update account set balance = ? where userId = ? and country = ?', [adminFromAccount.balance, adminFromAccount.userId, adminFromAccount.country]),
+                      await query('update account set balance = ? where userId = ? and country = ?', [adminToAccount.balance, adminToAccount.userId, adminToAccount.country]),
+                      await query('delete from exchange_request where requestId = ?', [real_request.requestId]),
+                      await query('delete from exchange_request where requestId = ?', [exReq2.requestId]),
+                      await query('insert into transaction_record (requestId1, requestId2, user1Id, user2Id) values (?,?,?,?)',
+                       [requsterUser.id,secondUser.id, real_request.requestId, exReq2.requestId])
+                    ])
+                    }
               }
             }
           }
         }
       }
+      else {
+        //if no match, set bit flag to 'checked' in DB
+        await query('update exchange_request set exchange_request.check = ? where requestId = ?', [true, real_request.requestId])
+      }
+}
+
+async function findMatch() {
+  await transaction(async () => {
+  let request_arr = await query('SELECT * from exchange_request left join user on exchange_request.userId = user.id where exchange_request.check = ? limit 1', [false])
+  let request = request_arr[0]
+  console.log(request)
+  if (request) {
+    //run algorithm
+    let userAccount_arr = await query('SELECT * from account left join user on user.id = account.userId where account.userId = ? and account.country = ? and account.type = ?',
+    [request.userId, request.fromCurrency,AccountType.Internal])
+    let userAccount = userAccount_arr[0]
+  if (userAccount) {
+    let userToAccount_arr = await query('SELECT * from account left join user on user.id = account.userId where account.userId = ? and account.country = ? and account.type = ?',
+    [request.userId, request.toCurrency,AccountType.Internal])
+    let userToAccount = userToAccount_arr[0]
+    if (userToAccount) {
+      const exReqData = new exReq(request.userId, request.bidRate, request.amountPay, request.amountWant, request.fromCurrency, request.toCurrency)
+      await executeExchange(request.currentRate, request, userAccount, userToAccount, exReqData, request)
+    } else {
+      //no userToAccount, create a new account to store desire money
+      const accountId = await query('INSERT INTO account (name, country, type, balance, userId) VALUES (?, ?, ?, ?,?)', [`Multicurrency Account - ${request.toCurrency}`, request.toCurrency, AccountType.Internal, 0.0, request.userId ])
+      let newAccount_arr = await query('SELECT * from account where id = ?', [accountId.insertId])
+      let newAccount = newAccount_arr[0]
+      if (newAccount) {
+        const exReqData = new exReq(request.userId, request.bidRate, request.amountPay, request.amountWant, request.fromCurrency, request.toCurrency)
+       await executeExchange(request.currentRate, request, userAccount, newAccount, exReqData, request)
+      }
     }
-} /*
-// test exchange request functionality
-server.express.get('/test-exchange', asyncRoute(async (req, res) => {
-  //seed fake requests
-  console.log("hello world!")
-  let user2 = await createTempUser('sokchetraeung@gmail.com', 'sokchetraeung', 'USD', 100.0);
-  let user2Account = await createTempAccount(user2,100.0)
-  let user1 = await createTempUser('evanlin@gmail.com', 'evanlin','CAD',100.0);
-  let user1Account = await createTempAccount(user1,100.0)
-
-    if (user1) {
-      if (user2) {
-      if (user1Account) {
-      if (user2Account) {
-        const exReqdata2 = new exReq(user1.id, 1.30, 7.69 ,10.0, 'USD','CAD' );
-        const exReqdata1 = new exReq(user2.id, 0.7, 14.28 ,10.0, 'CAD', 'USD');
-        let request1 = await createTempRequest(user1,exReqdata1)
-        let request2 = await createTempRequest(user2,exReqdata2)
-        console.log(request2)
-        const match = await checkForMatch(exReqdata1)
-        console.log(match)
-        if (match[0]) {
-          //there is a match
-          //update requester account assume user1 is the requester
-          user1Account[0].balance = user1Account[0].balance - exReqdata1.amountPay
-          let userToAccount = await Account.createQueryBuilder("account")
-                                           .leftJoinAndSelect("account.user", "user")
-                                          .where("user.id = :uId" , { uId : exReqdata1.userId } )
-                                          .andWhere("country = :toCurrency", { toCurrency : exReqdata1.toCurrency } )
-                                          .getOne()
-          if (userToAccount){
-            userToAccount.balance = userToAccount.balance + exReqdata1.amountWant
-          }
-          else {
-            //no userToAccount, create a new account to store desire money
-            const accountId = await Account.createQueryBuilder().insert().into(Account).values({ country: exReqdata1.toCurrency, type: 'interal', balance: exReqdata1.amountWant, user: user1}).returning('id').execute()
-            const newAccount = await Account.findOne({ where : {accountId : accountId  } })
-            if (newAccount) {
-              user1.account.push(newAccount) //successfuly created the account
-            }
-          }
-          //update the second user's accounts
-          let exReq2 = await ExchangeRequest.findOne({ where : { requestId : match[0] } })
-          if (exReq2) {
-            let secondUser = await User.createQueryBuilder("user")
-                                       .leftJoinAndSelect("user.exchangeRequest", "exchange_request")
-                                       .where(" exchange_request.requestId = :exId ", { exId : match[0] } )
-                                       .getOne()
-            let secondUserFromAccount = await Account.createQueryBuilder("account")
-                                                     .leftJoinAndSelect("account.user", "user")
-                                                     .where(" user.id = :uId" , { uId : secondUser?.id } )
-                                                     .andWhere(" country = :fromCountry ", { fromCountry : exReq2.fromCurrency })
-                                                     .getOne()
-            if (secondUserFromAccount) {
-              secondUserFromAccount.balance = secondUserFromAccount.balance - exReq2.amountPay
-            }
-            let secondUserToAccount = await Account.createQueryBuilder("account")
-                                                   .leftJoinAndSelect("account.user", "user")
-                                                   .where(" user.id = :uId" , { uId : secondUser?.id } )
-                                                   .andWhere(" country = :toCountry ", { toCountry : exReq2.toCurrency } )
-                                                   .getOne()
-            if (secondUserToAccount) {
-              secondUserToAccount.balance = secondUserToAccount.balance + exReq2.amountWant
-            }
-            //store transaction in transaction history
-            TransactionRecord.createQueryBuilder().insert().into(TransactionRecord).values({
-                    requestId1 : request1?.requestId,
-                    requestId2 : exReq2.requestId,
-                    profit: match[1]
-                  }).execute()
-          }
-        }
-
-      }
-      }
-
-      }
-      }
-} ))
-*/ /*
-async function createTempUser(email : string, name : string, country : string, balance : number ) {
-const user = await User.insert({ email : email, userType :  UserType.User, name : name, password: 'sokchetraeung',
-country : country, exchangeRequest : [] , account : [] })
-let user1 = await User.findOne({ where : { id : user.generatedMaps[0].id } })
-return user1;
+  }
+}
+})
 }
 
+// server.express.get('/test_raw_sql', asyncRoute(async (req, res) => {
+//   let requesterUser1_arr = await query('SELECT * from user where id = ?', [10000])
+//   console.log(requesterUser1_arr)
+//   console.log("access null arr" ,requesterUser1_arr[0])
+//   res.send().status(200)
+// }))
 
-async function createTempAccount(user : User | undefined, balance : number ) {
-  if (user) {
-  let user1 = await User.findOne({ where : { id : user.id} })
-  let tempArr :Account[] = []
-  const country :string[] = ['USD', 'CAD', 'JPY', 'BRL', 'INR', 'CNY']
-  for (let i = 0; i < 6; i++){
-    await Account.createQueryBuilder().insert().into(Account).values({ country: country[i], type: 'interal', balance: balance, user : user1 }).execute()
-    let user1Account = await Account.createQueryBuilder("account")
-                                    .leftJoinAndSelect("account.user", "user")
-                                    .where("user.id = :uId" , { uId : user.id } )
-                                    .andWhere("country = :userCountry", { userCountry : country[i] } )
-                                    .getOne()
-    tempArr.push(user1Account!)
-  }
-  if (user1) {
-        user1.account = tempArr;
-  }
-  return tempArr;
-  }
-  return null
-}
+setInterval(findMatch, 3000) //increase time help the performance, but wait long time to recieve transaciton
 
-async function createTempRequest(user : User, exReqData : exReq) {
-/*
-  //await transaction(async entityManager => {
-    await ExchangeRequest.createQueryBuilder().insert().into(ExchangeRequest).values( { amountWant: exReqData.amountWant, amountPay: exReqData.amountPay, bidRate: exReqData.bidRate
-      , currentRate: 1, fromCurrency: exReqData.fromCurrency, toCurrency: exReqData.toCurrency, user: user } ).execute()
-    const requestId = await query(` SELECT LAST_INSERT_ID()`);
-    console.log(requestId)
-  //});
-  */
-
-/*
-let exch = await ExchangeRequest.insert({ amountWant: exReqData.amountWant, amountPay: exReqData.amountPay, bidRate: exReqData.bidRate
-  , currentRate: 1, fromCurrency: exReqData.fromCurrency, toCurrency: exReqData.toCurrency, user: user })
-  const myRequest = await ExchangeRequest.findOne({ where : { requestId : exch.generatedMaps[0].requestId } })
-  if (myRequest) {
-    return myRequest
-  }
-  return null
-}
-*/ server.express.post(
+server.express.post(
   '/confirm-request',
   asyncRoute(async (req, res) => {
     //handle request
     console.log('POST /confirm-request')
     const { amountWant, amountPay, bidRate, currentRate, fromCurrency, toCurrency } = req.body
     console.log(currentRate)
-    let paid = false;
-    const user = await getLoggedInUser(req);
-    const exReqData = new exReq(user.id, bidRate, amountPay, amountWant, fromCurrency, toCurrency)
-    //get requester info
-    //get requester account
-    await transaction(async () => {
-      let requesterUser = await User.findOne({ where: { id: exReqData.userId } })
-      //console.log(requesterUser)
-      if (requesterUser) {
-        let userAccount = await Account.createQueryBuilder('account')
-          .leftJoinAndSelect('account.user', 'user')
-          .where('user.id = :uId ', { uId: requesterUser.id })
-          .andWhere('country = :fromCurrency', { fromCurrency: exReqData.fromCurrency })
-          .andWhere('type = :accountType', { accountType: AccountType.Internal })
-          .getOne()
-        if (userAccount) {
-          if (Number(userAccount.balance) - Number(exReqData.amountPay) >= 0) {
-            //check if userToAccount exists
-            //substract from account
-            userAccount.balance = Number(userAccount.balance) - Number(exReqData.amountPay)
-            Account.save(userAccount)
-            paid = true;
-            res.setHeader('Content-Type', 'application/json')
-            res.status(200).send(JSON.stringify({ success: 1, notEnoughMoney: 0, noAccount: 0 }))
-          } else {
-            res.setHeader('Content-Type', 'application/json')
-            res.status(200).send(JSON.stringify({ success: 0, notEnoughMoney: 1, noAccount: 0 }))
-          }
-        } else {
-          console.log(exReqData)
-          res.setHeader('Content-Type', 'application/json')
-          res.status(200).send(JSON.stringify({ success: 0, notEnoughMoney: 0, noAccount: 1 }))
-        }
-      }
-    })
-    // check for match and perform transaction
-    await transaction(async () => {
-      let requesterUser = await User.findOne({ where: { id: exReqData.userId } })
-      if (requesterUser && paid) {
-        let userAccount = await Account.createQueryBuilder('account')
-          .leftJoinAndSelect('account.user', 'user')
-          .where('user.id = :uId ', { uId: requesterUser.id })
-          .andWhere('country = :fromCurrency', { fromCurrency: exReqData.fromCurrency })
-          .andWhere('type = :accountType', { accountType: AccountType.Internal })
-          .getOne()
-        if (userAccount) {
-          let userToAccount = await Account.createQueryBuilder('account')
-            .leftJoinAndSelect('account.user', 'user')
-            .where('user.id = :uId', { uId: exReqData.userId })
-            .andWhere('country = :toCurrency', { toCurrency: exReqData.toCurrency })
-            .andWhere('type = :accountType', { accountType: AccountType.Internal })
-            .getOne()
-          if (userToAccount) {
-            await executeExchange(currentRate, requesterUser, userAccount, userToAccount, exReqData)
-          } else {
-            //no userToAccount, create a new account to store desire money
-            const accountId = await Account.insert({
-              name: `Multicurrency Account - ${exReqData.toCurrency}`,
-              country: exReqData.toCurrency,
-              type: AccountType.Internal,
-              balance: 0.0,
-              user: requesterUser,
-            })
-            let newAccount = await Account.findOne({ where: { id: accountId.generatedMaps[0].id } })
-            if (newAccount) {
-              await executeExchange(currentRate, requesterUser, userAccount, newAccount, exReqData)
+    const authToken = req.cookies.authToken
+    //let paid = false;
+    if (authToken) {
+      //console.log(authToken)
+      //const sql = await getSQLConnection()
+      //const session = await Session.findOne({ where: { authToken }, relations: ['user'] })
+      const session_arr = await query('SELECT * from session left join user on session.userId = user.id where session.authToken = ?', [authToken])
+      //console.log(session_str[0].authToken)
+      const session = session_arr[0]
+      if (session) {
+        const exReqData = new exReq(session.userId, bidRate, amountPay, amountWant, fromCurrency, toCurrency)
+        //get requester info
+        //get requester account
+        await transaction(async () => {
+          let requesterUser1_arr = await query('SELECT * from user where id = ?', [exReqData.userId])
+          let requesterUser1 = requesterUser1_arr[0]
+
+          if (requesterUser1) {
+            let userAccount_arr = await query('SELECT * from account left join user on user.id = account.userId where account.userId = ? and account.country = ? and account.type = ?',
+             [requesterUser1?.id,exReqData.fromCurrency,AccountType.Internal])
+             let userAccount = userAccount_arr[0]
+
+            if (userAccount) {
+              if (Number(userAccount.balance) - Number(exReqData.amountPay) >= 0) {
+                //check if userToAccount exists
+                //substract from account
+                res.setHeader('Content-Type', 'application/json')
+                res.status(200).send(JSON.stringify({ success: 1, notEnoughMoney: 0, noAccount: 0 }))
+                userAccount.balance = Number(userAccount.balance) - Number(exReqData.amountPay)
+                await query('update account set account.balance = ? where account.userId = ? and account.country = ?',[userAccount.balance, userAccount.userId, userAccount.country])
+
+                //this is where insert the exchange request from user
+                await query('INSERT INTO exchange_request (exchange_request.amountWant, exchange_request.amountPay, exchange_request.bidRate,exchange_request.currentRate, exchange_request.fromCurrency, exchange_request.toCurrency, exchange_request.userId, exchange_request.check) VALUES(?,?,?,?,?,?,?,?)',
+                 [exReqData.amountWant,exReqData.amountPay,exReqData.bidRate,currentRate,exReqData.fromCurrency,exReqData.toCurrency,requesterUser1.id,false])
+
+                } else {
+                res.setHeader('Content-Type', 'application/json')
+                res.status(200).send(JSON.stringify({ success: 0, notEnoughMoney: 1, noAccount: 0 }))
+              }
+            } else {
+              res.setHeader('Content-Type', 'application/json')
+              res.status(200).send(JSON.stringify({ success: 0, notEnoughMoney: 0, noAccount: 1 }))
             }
-          }
-        }
+         }
+        })
+      } else {
+        //session not found, login
+        res.redirect('/app/login')
       }
     })
   })
