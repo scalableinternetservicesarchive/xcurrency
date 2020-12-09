@@ -117,6 +117,14 @@ export function ProfilePage(props: ProfilePageProps) {
             <Accounts acc={userAccounts[10]} num={10} />
             <Accounts acc={userAccounts[11]} num={11} />
             <Accounts acc={userAccounts[12]} num={12} />
+            <Accounts acc={userAccounts[10]} num={13} />
+            <Accounts acc={userAccounts[11]} num={14} />
+            <Accounts acc={userAccounts[12]} num={15} />
+            <Accounts acc={userAccounts[10]} num={16} />
+            <Accounts acc={userAccounts[11]} num={17} />
+            <Accounts acc={userAccounts[12]} num={18} />
+            <Accounts acc={userAccounts[10]} num={19} />
+            <Accounts acc={userAccounts[11]} num={20} />
           </tbody>
         </Table>
         <Spacer $h4 />
