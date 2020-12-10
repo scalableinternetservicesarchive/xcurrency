@@ -93,6 +93,10 @@ export interface SubscriptionAccountUpdatesArgs {
   userId: Scalars['Int']
 }
 
+export interface SubscriptionRequestUpdatesArgs {
+  userId: Scalars['Int']
+}
+
 export interface User {
   __typename?: 'User'
   id: Scalars['Int']
@@ -129,7 +133,8 @@ export interface ExchangeRequest {
   currentRate: Scalars['Float']
   fromCurrency: Scalars['String']
   toCurrency: Scalars['String']
-  check: Scalars['Boolean']
+  check?: Maybe<Scalars['Boolean']>
+  user?: Maybe<User>
 }
 
 export enum UserType {
@@ -444,6 +449,8 @@ export type ExchangeRequestResolvers<
   currentRate?: Resolver<ResolversTypes['Float'], ParentType, ContextType>
   fromCurrency?: Resolver<ResolversTypes['String'], ParentType, ContextType>
   toCurrency?: Resolver<ResolversTypes['String'], ParentType, ContextType>
+  check?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>
+  user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>
   __isTypeOf?: IsTypeOfResolverFn<ParentType>
 }
 

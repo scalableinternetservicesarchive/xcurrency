@@ -354,21 +354,32 @@ server.express.post(
                 await query('INSERT INTO exchange_request (exchange_request.amountWant, exchange_request.amountPay, exchange_request.bidRate,exchange_request.currentRate, exchange_request.fromCurrency, exchange_request.toCurrency, exchange_request.userId, exchange_request.check) VALUES(?,?,?,?,?,?,?,?)',
                  [exReqData.amountWant,exReqData.amountPay,exReqData.bidRate,currentRate,exReqData.fromCurrency,exReqData.toCurrency,requesterUser1.id,false])
 
-                } else {
+                const {amountWant, amountPay, bidRate, fromCurrency, toCurrency } = exReqData;
+                const [updatedRequest] = await Promise.all([
+                  ExchangeRequest.findOne(
+                    { amountWant, amountPay, bidRate, fromCurrency, toCurrency, userId: requesterUser1.id },
+                    { relations: ['user'] }
+                  )
+                ])
+                pubsub.publish('REQUEST_UPDATE_' + updatedRequest?.userId, updatedRequest)
+              }
+              else {
                 res.setHeader('Content-Type', 'application/json')
                 res.status(200).send(JSON.stringify({ success: 0, notEnoughMoney: 1, noAccount: 0 }))
               }
-            } else {
+            }
+            else {
               res.setHeader('Content-Type', 'application/json')
               res.status(200).send(JSON.stringify({ success: 0, notEnoughMoney: 0, noAccount: 1 }))
             }
-         }
+          }
         })
-      } else {
+      }
+      else {
         //session not found, login
         res.redirect('/app/login')
       }
-    })
+    }
   })
 )
 

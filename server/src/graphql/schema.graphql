@@ -90,6 +90,7 @@ type ExchangeRequest {
   fromCurrency: String!
   toCurrency: String!
   check: Boolean
+  user: User
 }
 
 #type Transaction {

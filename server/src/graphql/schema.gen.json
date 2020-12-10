@@ -1323,14 +1323,14 @@
             "isDeprecated": false,
             "deprecationReason": null
           },
-          { 
+          {
             "name": "requestUpdates",
             "description": null,
             "args": [
-              { 
+              {
                 "name": "userId",
                 "description": null,
-                "type": { 
+                "type": {
                   "kind": "NON_NULL",
                   "name": null,
                   "ofType": {
@@ -1342,9 +1342,9 @@
                 "defaultValue": null
               }
             ],
-            "type": { 
+            "type": {
               "kind": "OBJECT",
-              "name": "Accounts",
+              "name": "ExchangeRequest",
               "ofType": null
             },
             "isDeprecated": false,
@@ -1758,6 +1758,30 @@
                 "name": "String",
                 "ofType": null
               }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "check",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "user",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "User",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
