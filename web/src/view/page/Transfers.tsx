@@ -6,7 +6,7 @@ import {
   FetchExchangeRequests,
   FetchExchangeRequestsVariables,
   RequestSubscription,
-  RequestSubscriptionVariables
+  RequestSubscriptionVariables,
 } from '../../graphql/query.gen'
 import { UserContext } from '../auth/user'
 import { fetchExchangeRequests, subscribeRequests } from '../exchangeRequestQL/fetchExchangeRequest'
@@ -62,7 +62,7 @@ export function MyTransfers() {
             amountPay: request.amountPay,
             fromCurrency: request.fromCurrency,
             amountWant: request.amountWant,
-            toCurrench: request.toCurrency,
+            toCurrency: request.toCurrency,
             bidRate: request.bidRate,
           })
         )
@@ -101,4 +101,3 @@ export function MyTransfers() {
     </div>
   )
 }
-

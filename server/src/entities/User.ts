@@ -52,9 +52,4 @@ export class User extends BaseEntity implements GraphqlUser {
 
   @OneToMany(() => Account, account => account.user)
   account: Account[]
-
-  @Column({
-    nullable: true,
-  })
-  plaidAccessToken: string
 }

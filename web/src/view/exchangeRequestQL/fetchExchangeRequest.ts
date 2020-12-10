@@ -2,6 +2,9 @@ import { gql } from '@apollo/client'
 
 export const fragmentExchangeRequest = gql`
   fragment ExchangeRequest on ExchangeRequest {
+    user {
+      id
+    }
     requestId
     amountWant
     bidRate

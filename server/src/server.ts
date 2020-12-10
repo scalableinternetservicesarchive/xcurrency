@@ -13,6 +13,7 @@ import cors from 'cors'
 import { json, raw, RequestHandler, static as expressStatic } from 'express'
 import { getOperationAST, parse as parseGraphql, specifiedRules, subscribe as gqlSubscribe, validate } from 'graphql'
 import { GraphQLServer } from 'graphql-yoga'
+import Redis from 'ioredis'
 import { forAwaitEach, isAsyncIterable } from 'iterall'
 import path from 'path'
 import 'reflect-metadata'
@@ -32,6 +33,8 @@ import { AccountType, UserType } from './graphql/schema.types'
 import { expressLambdaProxy } from './lambda/handler'
 import { renderApp } from './render'
 
+const redis = new Redis();
+
 //maximum amount of divation of a curreny in a single transaction.
 let moneyDeviationPara = new Map()
 moneyDeviationPara.set('USD', 20)
@@ -48,6 +51,8 @@ const plaidClient = new plaid.Client({
   secret: Config.plaidSandboxKey,
   env: plaid.environments.sandbox,
 })
+
+
 
 const server = new GraphQLServer({
   typeDefs: getSchema(),
@@ -105,32 +110,26 @@ server.express.post(
     console.log('POST /auth/login')
     const email = req.body.email
     const password = req.body.password
+    const user = await query(`
+      SELECT * FROM user WHERE email='${email}'
+    `)
 
-
-    // const user = await User.findOne({ where: { email } })
-
-    // const user =  (await query(
-    //   `SELECT id, password FROM user
-    //     WHERE user.email = '${email}'`
-    // ))[0];
-
-    const user = await User.createQueryBuilder("user").select("user.id").addSelect("user.password")
-              .where("user.email = :email", { email })
-              .getOne();
-
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    if (!user.length || !(await bcrypt.compare(password, user[0].password))) {
       res.status(403).send('Forbidden')
       return
     }
 
     const authToken = uuidv4()
 
-    await Session.delete({ user })
+    await query(`DELETE FROM session WHERE userId='${user[0].id}'`)
+    await query(`INSERT INTO session (authToken, userId) VALUES('${authToken}', '${user[0].id}')`)
+    // const session = new Session()
+    // session.authToken = authToken
+    // session.userId = user[0].id
+    // await Session.save(session).then(s => console.log('saved session ' + s.id))
 
-    const session = new Session()
-    session.authToken = authToken
-    session.user = user
-    await Session.save(session).then(s => console.log('saved session ' + s.id))
+    // Cache the session upon login
+    await redis.set(authToken, JSON.stringify(user[0]))
 
     const SESSION_DURATION = 30 * 24 * 60 * 60 * 1000 // 30 days
     res
@@ -143,20 +142,22 @@ server.express.post(
 server.express.post(
   '/auth/signup',
   asyncRoute(async (req, res) => {
-    console.log('POST /auth/signup')
-
+    console.log('POST /auth/signup');
     const { name, email, password } = req.body
-    // const user = await User.findOne({ where: { email } })
-    const user = await User.createQueryBuilder("user").select("user.id")
-      .where("user.email = :email", { email })
-      .getOne();
+    const user = await query(`
+      SELECT * FROM user WHERE email='${email}'
+    `)
 
-    if (user) {
+    if (user.length) {
       console.log('Already found user in the database!')
       return res.sendStatus(400)
     }
+
     const hashedPassword = await bcrypt.hash(password, 10)
-    await User.insert({ name, email, password: hashedPassword })
+    await query(`
+      INSERT INTO user (name, email, password) VALUES ('${name}', '${email}', '${hashedPassword}')
+    `)
+
     console.log('Inserted user into database!')
     return res.status(200).send('Success!')
   })
@@ -224,6 +225,31 @@ async function executeExchange(
                       await query('insert into transaction_record (requestId1, requestId2, user1Id, user2Id) values (?,?,?,?)',
                        [requsterUser.id,secondUser.id, real_request.requestId, exReq2.requestId])
                     ])
+
+                    //publish for the subscription
+                    const [updatedUserToAccount, updatedSecondUserToAccount, updatedAdminFromAccount, updatedAdminToAccount] = await Promise.all([
+                      Account.findOne(
+                        { userId: userToAccount.userId, name: userToAccount.name },
+                        { relations: ['user'] }
+                      ),
+                      Account.findOne(
+                        { userId: secondUserToAccount.userId, name: secondUserToAccount.name },
+                        { relations: ['user'] }
+                      ),
+                      Account.findOne(
+                        { userId: adminFromAccount.userId, name: adminFromAccount.name },
+                        { relations: ['user'] }
+                      ),
+                      Account.findOne(
+                        { userId: adminToAccount.userId, name: adminToAccount.name },
+                        { relations: ['user'] }
+                      )
+                    ])
+                    pubsub.publish('ACCOUNT_UPDATE_' + updatedUserToAccount?.userId, updatedUserToAccount)
+                    pubsub.publish('ACCOUNT_UPDATE_' + updatedSecondUserToAccount?.userId, updatedSecondUserToAccount)
+                    pubsub.publish('ACCOUNT_UPDATE_' + updatedAdminFromAccount?.userId, updatedAdminFromAccount)
+                    pubsub.publish('ACCOUNT_UPDATE_' + updatedAdminToAccount?.userId, updatedAdminToAccount)
+
                     }
               }
             }
@@ -315,27 +341,44 @@ server.express.post(
                 userAccount.balance = Number(userAccount.balance) - Number(exReqData.amountPay)
                 await query('update account set account.balance = ? where account.userId = ? and account.country = ?',[userAccount.balance, userAccount.userId, userAccount.country])
 
+                //publish for the subscription
+                const [updatedUserAccount] = await Promise.all([
+                  Account.findOne(
+                    { userId: userAccount.userId, name: userAccount.name },
+                    { relations: ['user'] }
+                  )
+                ])
+                pubsub.publish('ACCOUNT_UPDATE_' + updatedUserAccount?.userId, updatedUserAccount)
+
                 //this is where insert the exchange request from user
                 await query('INSERT INTO exchange_request (exchange_request.amountWant, exchange_request.amountPay, exchange_request.bidRate,exchange_request.currentRate, exchange_request.fromCurrency, exchange_request.toCurrency, exchange_request.userId, exchange_request.check) VALUES(?,?,?,?,?,?,?,?)',
                  [exReqData.amountWant,exReqData.amountPay,exReqData.bidRate,currentRate,exReqData.fromCurrency,exReqData.toCurrency,requesterUser1.id,false])
 
-                } else {
+                const {amountWant, amountPay, bidRate, fromCurrency, toCurrency } = exReqData;
+                const [updatedRequest] = await Promise.all([
+                  ExchangeRequest.findOne(
+                    { amountWant, amountPay, bidRate, fromCurrency, toCurrency, userId: requesterUser1.id },
+                    { relations: ['user'] }
+                  )
+                ])
+                pubsub.publish('REQUEST_UPDATE_' + updatedRequest?.userId, updatedRequest)
+              }
+              else {
                 res.setHeader('Content-Type', 'application/json')
                 res.status(200).send(JSON.stringify({ success: 0, notEnoughMoney: 1, noAccount: 0 }))
               }
-            } else {
+            }
+            else {
               res.setHeader('Content-Type', 'application/json')
               res.status(200).send(JSON.stringify({ success: 0, notEnoughMoney: 0, noAccount: 1 }))
             }
-         }
+          }
         })
-      } else {
+      }
+      else {
         //session not found, login
         res.redirect('/app/login')
       }
-    } else {
-      //not token found, login
-      res.redirect('/app/login')
     }
   })
 )
@@ -355,6 +398,7 @@ server.express.post(
     if (authToken) {
       await Session.delete({ authToken })
     }
+    await redis.del(authToken)
     res.status(200).cookie('authToken', '', { maxAge: 0 }).send('Success!')
   })
 )
@@ -477,57 +521,55 @@ server.express.post('/graphqlsubscription/disconnect', (req, res) => {
 server.express.post(
   '/graphql',
   asyncRoute(async (req, res, next) => {
-    const authToken = req.cookies.authToken || req.header('x-authtoken')
-    if (authToken) {
-      const session = await Session.findOne({ where: { authToken }, relations: ['user'] })
-      if (session) {
-        const reqAny = req as any
-        reqAny.user = session.user
-      }
-    }
+    setReqUser(req, await getLoggedInUser(req));
     next()
   })
 )
 
-server.express.post('/getPlaidLinkToken', async (req: any, res) => {
-  const authToken = req.cookies.authToken || req.header('x-authtoken')
+function setReqUser(req: any, user: any) {
+  req.user = user;
+}
+
+async function getLoggedInUser(req: any) {
+  const authToken = req.cookies.authToken || req.header('x-authtoken');
   if (authToken) {
-    const session = await Session.findOne({ where: { authToken }, relations: ['user'] })
-    if (session) {
-      const clientUserId = session.user.id
-      try {
-        const tokenResponse = await plaidClient.createLinkToken({
-          user: {
-            client_user_id: String(clientUserId),
-          },
-          client_name: 'XCurrency',
-          products: ['auth'],
-          country_codes: ['US'],
-          language: 'en',
-          webhook: 'https://webhook.sample.com',
-        })
-        return res.send({ link_token: tokenResponse.link_token })
-      } catch (e) {
-        return res.send({ error: e.message })
-      }
-    } else {
-      return res.send({ error: 'No session associated with the logged in user could be found!' })
+    const redisResponse = await redis.get(authToken);
+    if (redisResponse) {
+      return JSON.parse(redisResponse)
     }
-  } else {
-    return res.send({ error: 'No authentication cookie could be found! Please try logging in.' })
+    else {
+      const session = await Session.findOne({ where: { authToken }, relations: ['user'] })
+      if (session) {
+        await redis.set(authToken, JSON.stringify(session.user))
+        return session.user;
+      }
+    }
+  }
+}
+
+server.express.post('/getPlaidLinkToken', async (req: any, res) => {
+  const user = await getLoggedInUser(req);
+  try {
+    const tokenResponse = await plaidClient.createLinkToken({
+      user: {
+        client_user_id: String(user.id),
+      },
+      client_name: 'XCurrency',
+      products: ['auth'],
+      country_codes: ['US'],
+      language: 'en',
+      webhook: 'https://webhook.sample.com',
+    })
+    return res.send({ link_token: tokenResponse.link_token })
+  } catch (e) {
+    return res.send({ error: e.message })
   }
 })
 
 server.express.get('/requests', async (req: any, res) => {
-  const authToken = req.cookies.authToken || req.header('x-authtoken')
-  if (authToken) {
-    const session = await Session.findOne({ where: { authToken }, relations: ['user'] })
-    if (session) {
-      const clientUser = session.user
-      const requests = await ExchangeRequest.find({ where: { user: clientUser } })
-      res.status(200).type('json').send(requests)
-    }
-  }
+  const user = await getLoggedInUser(req);
+  const requests = await ExchangeRequest.find({ where: { user } })
+  res.status(200).type('json').send(requests)
 })
 
 /*
@@ -538,24 +580,11 @@ server.express.post('/getExternalAccounts', async (req, res) => {
     const publicToken = req.body.public_token
     // Exchange the client-side public_token for a server access_token
     const tokenResponse = await plaidClient.exchangePublicToken(publicToken)
-    // Save the access_token and item_id to a persistent database
-    const accessToken = tokenResponse.access_token
-
-    const authToken = req.cookies.authToken || req.header('x-authtoken')
-    if (authToken) {
-      const session = await Session.findOne({ where: { authToken }, relations: ['user'] })
-      if (session) {
-        // Save the access token for future use
-        const user = session.user
-        await user.save()
-        const { accounts } = await plaidClient.getAccounts(accessToken)
-        return res.status(200).send(accounts)
-      }
-    }
+    const { accounts } = await plaidClient.getAccounts(tokenResponse.access_token)
+    return res.status(200).send(accounts)
   } catch (e) {
     return res.status(500).send({ error: e.message })
   }
-  return res.sendStatus(200)
 })
 
 /**
@@ -563,83 +592,96 @@ server.express.post('/getExternalAccounts', async (req, res) => {
  */
 server.express.post('/createAccounts', async (req, res) => {
   const externalAccounts = req.body.accounts
-  const authToken = req.cookies.authToken || req.header('x-authtoken')
-  if (authToken) {
-    const session = await Session.findOne({ where: { authToken }, relations: ['user'] })
-    if (session) {
-      const newAccountIds = []
-      const user = session.user
-      for (const externalAccount of externalAccounts) {
-        if (externalAccount.subtype === 'savings' || externalAccount.subtype == 'checking') {
-          const { current: accountBalance, iso_currency_code: accountCurrencyCode } = externalAccount.balances
-          const externalAccountName = `${externalAccount.name} - ${accountCurrencyCode}`
-          const externalAccountExists = (
-            await query(
-              `SELECT id FROM account
-                WHERE account.userId = ${user.id} and
-                account.country = '${accountCurrencyCode}' and
-                account.name = '${externalAccountName}' and
-                account.type = '${AccountType.External}'`
+  const user = await getLoggedInUser(req);
+  let newAccounts: any[] = [];
+  for (const externalAccount of externalAccounts) {
+    if (externalAccount.subtype === 'savings' || externalAccount.subtype == 'checking') {
+      const { current: accountBalance, iso_currency_code: accountCurrencyCode } = externalAccount.balances
+      const externalAccountName = `${externalAccount.name} - ${accountCurrencyCode}`
+      const internalAccountName = `Multicurrency Account - ${accountCurrencyCode}`;
+      const [externalAccountExists, internalAccountExists] = await Promise.all([query(
+        `SELECT id FROM account
+            WHERE account.userId = ${user.id} and
+            account.country = '${accountCurrencyCode}' and
+            account.name = '${externalAccountName}' and
+            account.type = '${AccountType.External}'`
+      ), query(
+        `SELECT id FROM account
+          WHERE account.userId = ${user.id} and
+          account.country = '${accountCurrencyCode}' and
+          account.type = '${AccountType.Internal}'`
+      )]);
+
+      const insertAccountPromises = []
+      if (!externalAccountExists.length) {
+        insertAccountPromises.push(
+          query(`
+            INSERT INTO account (name, country, userId, balance, type) VALUES ('${externalAccountName}',
+            '${accountCurrencyCode}', '${user.id}', '${accountBalance}', '${AccountType.External}')
+          `)
+        )
+
+        if (!internalAccountExists.length) {
+          insertAccountPromises.push(
+            query(`
+              INSERT INTO account (name, country, userId, balance, type) VALUES ('${internalAccountName}',
+              '${accountCurrencyCode}', '${user.id}', '0', '${AccountType.Internal}')`
             )
-          ).length
-
-          if (!externalAccountExists) {
-            const insertResponse = await Account.insert({
-              name: `${externalAccountName}`,
-              country: accountCurrencyCode,
-              balance: accountBalance,
-              user,
-              type: AccountType.External,
-            })
-            newAccountIds.push(insertResponse.identifiers[0].id)
-
-            const internalAccountExists = (
-              await query(
-                `SELECT id FROM account
-                  WHERE account.userId = ${user.id} and
-                  account.country = '${accountCurrencyCode}' and
-                  account.type = '${AccountType.Internal}'`
-              )
-            ).length
-
-            if (!internalAccountExists) {
-              const insertResponse = await Account.insert({
-                country: accountCurrencyCode,
-                name: `Multicurrency Account - ${accountCurrencyCode}`,
-                balance: 0,
-                user,
-                type: AccountType.Internal,
-              })
-              newAccountIds.push(insertResponse.identifiers[0].id)
-            }
-          }
+          )
         }
       }
-      return res.status(200).send({ newAccountIds })
+      newAccounts.push(...(await Promise.all(insertAccountPromises)))
+      const [insertedExternalAccount, insertedInternalAccount] = await Promise.all([
+        Account.findOne(
+          { userId: user.id, name: externalAccountName },
+          { relations: ['user'] }
+        ),
+        Account.findOne(
+          { userId: user.id, name: internalAccountName },
+          { relations: ['user'] }
+        )
+      ])
+      pubsub.publish('ACCOUNT_UPDATE_' + insertedExternalAccount?.userId, insertedExternalAccount)
+      pubsub.publish('ACCOUNT_UPDATE_' + insertedInternalAccount?.userId, insertedInternalAccount)
     }
   }
-  return res.status(500).send({ error: 'Could not add the linked accounts!' })
+  return res.status(200).send({newAccounts})
 })
 
 server.express.post('/transferBalance', async (req, res) => {
   const { fromAccountId, toAccountId, amount } = req.body
   await transaction(async () => {
-    const fromAccount = await Account.findOne({ where: { id: fromAccountId } })
-    if (!fromAccount) {
+    const [fromAccount, toAccount] = await Promise.all([
+      query(`SELECT id, balance FROM account WHERE id='${fromAccountId}'`),
+      query(`SELECT id, balance FROM account WHERE id='${toAccountId}'`),
+    ])
+
+    if (!fromAccount.length) {
       return res.status(400).send({ error: 'The account to transfer funds from does not exist!' })
     }
-    const toAccount = await Account.findOne({ where: { id: toAccountId } })
-    if (!toAccount) {
+    if (!toAccount.length) {
       return res.status(400).send({ error: 'The account to transfer funds to does not exist!' })
     }
-    if (fromAccount.balance < amount) {
+
+    if (fromAccount[0].balance < amount) {
       return res.status(400).send({ error: 'Insufficient funds!' })
     }
 
-    fromAccount.balance = +fromAccount.balance - +amount
-    await fromAccount.save()
-    toAccount.balance = +toAccount.balance + +amount
-    await toAccount.save()
+    const fromAccountBalance = +fromAccount[0].balance - +amount
+    const toAccountBalance = +toAccount[0].balance + +amount
+
+    await Promise.all([
+      query(`UPDATE account SET balance='${fromAccountBalance}' WHERE id='${fromAccount[0].id}'`),
+      query(`UPDATE account SET balance='${toAccountBalance}' WHERE id='${toAccount[0].id}'`),
+    ])
+
+    const [updatedFromAccount, updatedToAccount] = await Promise.all([
+      Account.findOne({ id: fromAccountId }, { relations: ['user'] }),
+      Account.findOne({ id: toAccountId }, { relations: ['user'] }),
+    ])
+
+    pubsub.publish('ACCOUNT_UPDATE_' + updatedFromAccount?.userId, updatedFromAccount)
+    pubsub.publish('ACCOUNT_UPDATE_' + updatedToAccount?.userId, updatedToAccount)
 
     return res.sendStatus(200)
   })

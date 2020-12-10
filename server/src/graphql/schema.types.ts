@@ -81,11 +81,16 @@ export interface MutationCreateUserArgs {
 export interface Subscription {
   __typename?: 'Subscription'
   surveyUpdates?: Maybe<Survey>
+  accountUpdates?: Maybe<Account>
   requestUpdates?: Maybe<ExchangeRequest>
 }
 
 export interface SubscriptionSurveyUpdatesArgs {
   surveyId: Scalars['Int']
+}
+
+export interface SubscriptionAccountUpdatesArgs {
+  userId: Scalars['Int']
 }
 
 export interface SubscriptionRequestUpdatesArgs {
@@ -98,7 +103,7 @@ export interface User {
   userType: UserType
   email: Scalars['String']
   name: Scalars['String']
-  account: Array<Account>
+  account?: Maybe<Array<Account>>
 }
 
 export interface Account {
@@ -128,7 +133,8 @@ export interface ExchangeRequest {
   currentRate: Scalars['Float']
   fromCurrency: Scalars['String']
   toCurrency: Scalars['String']
-  check: Scalars['Boolean']
+  check?: Maybe<Scalars['Boolean']>
+  user?: Maybe<User>
 }
 
 export enum UserType {
@@ -391,6 +397,13 @@ export type SubscriptionResolvers<
     ContextType,
     RequireFields<SubscriptionSurveyUpdatesArgs, 'surveyId'>
   >
+  accountUpdates?: SubscriptionResolver<
+    Maybe<ResolversTypes['Account']>,
+    'accountUpdates',
+    ParentType,
+    ContextType,
+    RequireFields<SubscriptionAccountUpdatesArgs, 'userId'>
+  >
   requestUpdates?: SubscriptionResolver<
     Maybe<ResolversTypes['ExchangeRequest']>,
     'requestUpdates',
@@ -408,7 +421,7 @@ export type UserResolvers<
   userType?: Resolver<ResolversTypes['UserType'], ParentType, ContextType>
   email?: Resolver<ResolversTypes['String'], ParentType, ContextType>
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>
-  account?: Resolver<Array<ResolversTypes['Account']>, ParentType, ContextType>
+  account?: Resolver<Maybe<Array<ResolversTypes['Account']>>, ParentType, ContextType>
   __isTypeOf?: IsTypeOfResolverFn<ParentType>
 }
 
@@ -436,6 +449,8 @@ export type ExchangeRequestResolvers<
   currentRate?: Resolver<ResolversTypes['Float'], ParentType, ContextType>
   fromCurrency?: Resolver<ResolversTypes['String'], ParentType, ContextType>
   toCurrency?: Resolver<ResolversTypes['String'], ParentType, ContextType>
+  check?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>
+  user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>
   __isTypeOf?: IsTypeOfResolverFn<ParentType>
 }
 

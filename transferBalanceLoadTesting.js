@@ -15,7 +15,6 @@ export const options = {
   },
 }
 
-
 const count200 = new Counter('status_code_2xx')
 const count300 = new Counter('status_code_3xx')
 const count400 = new Counter('status_code_4xx')
@@ -42,7 +41,6 @@ function recordRates(res) {
     rate500.add(1)
   }
 }
-
 
 export default function () {
   // console.log(`VU: ${__VU}  -  ITER: ${__ITER}`)
@@ -80,8 +78,6 @@ export default function () {
   // recordRates(http.post('http://localhost:3000/getPlaidLinkToken')) this is automatically performed on entering /app/profile (which needs to be optimized eventually)
   // sleep(5);
   recordRates(http.get('http://localhost:3000/app/profile'))
-
-  // sleep(2);
   const res = http.post(
     'http://localhost:3000/createAccounts',
     '{"accounts":[{"account_id":"e3qz8qZNePty5K6bwnLwHXzjPmK9leFLlmp5J","balances":{"available":8113.27,"current":10000,"iso_currency_code":"CAD","limit":null,"unofficial_currency_code":null},"mask":"2163","name":"Chase Savings","official_name":"Chase College Savings","subtype":"savings","type":"depository"},{"account_id":"7mJeWJrzyaHZXWzNp51pUxjvMW76XEtgKxenj","balances":{"available":4939.59,"current":5000,"iso_currency_code":"CAD","limit":null,"unofficial_currency_code":null},"mask":"4409","name":"Chase Checking","official_name":"Chase College Savings","subtype":"checking","type":"depository"}]}',
@@ -89,13 +85,13 @@ export default function () {
   )
   recordRates(res)
 
+  const { newAccounts } = JSON.parse(res.body)
   recordRates(http.get('http://localhost:3000/app/transferBalance'))
-  const { newAccountIds } = JSON.parse(res.body)
   // console.log(newAccountIds[0], newAccountIds[1])
   recordRates(
     http.post(
       'http://localhost:3000/transferBalance',
-      `{"fromAccountId":${newAccountIds[0]},"toAccountId":${newAccountIds[1]},"amount":5000}`,
+      `{"fromAccountId":${newAccounts[0].insertId},"toAccountId":${newAccounts[1].insertId},"amount":5000}`,
       {
         headers: headers,
       }
@@ -121,4 +117,3 @@ export default function () {
 
   // console.log(res.body)
 }
-

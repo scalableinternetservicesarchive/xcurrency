@@ -17,7 +17,7 @@ export interface FetchAccounts_user_account {
 
 export interface FetchAccounts_user {
   __typename: "User";
-  account: FetchAccounts_user_account[];
+  account: FetchAccounts_user_account[] | null;
 }
 
 export interface FetchAccounts {
@@ -48,6 +48,35 @@ export interface FetchAccount {
 
 export interface FetchAccountVariables {
   id: number;
+}
+
+/* tslint:disable */
+/* eslint-disable */
+// @generated
+// This file was automatically generated and should not be edited.
+
+// ====================================================
+// GraphQL subscription operation: AccountsSubscription
+// ====================================================
+
+export interface AccountsSubscription_accountUpdates_user {
+  __typename: "User";
+  id: number;
+}
+
+export interface AccountsSubscription_accountUpdates {
+  __typename: "Account";
+  user: AccountsSubscription_accountUpdates_user;
+  name: string | null;
+  balance: number;
+}
+
+export interface AccountsSubscription {
+  accountUpdates: AccountsSubscription_accountUpdates | null;
+}
+
+export interface AccountsSubscriptionVariables {
+  userId: number;
 }
 
 /* tslint:disable */
@@ -113,8 +142,14 @@ export interface FetchUserContext {
 // GraphQL query operation: FetchExchangeRequests
 // ====================================================
 
+export interface FetchExchangeRequests_exchangeRequests_user {
+  __typename: "User";
+  id: number;
+}
+
 export interface FetchExchangeRequests_exchangeRequests {
   __typename: "ExchangeRequest";
+  user: FetchExchangeRequests_exchangeRequests_user | null;
   requestId: number;
   amountWant: number;
   bidRate: number;
@@ -130,6 +165,40 @@ export interface FetchExchangeRequests {
 
 export interface FetchExchangeRequestsVariables {
   id?: number | null;
+}
+
+/* tslint:disable */
+/* eslint-disable */
+// @generated
+// This file was automatically generated and should not be edited.
+
+// ====================================================
+// GraphQL subscription operation: RequestSubscription
+// ====================================================
+
+export interface RequestSubscription_requestUpdates_user {
+  __typename: "User";
+  id: number;
+}
+
+export interface RequestSubscription_requestUpdates {
+  __typename: "ExchangeRequest";
+  user: RequestSubscription_requestUpdates_user | null;
+  requestId: number;
+  amountWant: number;
+  bidRate: number;
+  amountPay: number;
+  currentRate: number;
+  fromCurrency: string;
+  toCurrency: string;
+}
+
+export interface RequestSubscription {
+  requestUpdates: RequestSubscription_requestUpdates | null;
+}
+
+export interface RequestSubscriptionVariables {
+  userId: number;
 }
 
 /* tslint:disable */
@@ -341,11 +410,38 @@ export interface CreateUserVariables {
 // This file was automatically generated and should not be edited.
 
 // ====================================================
+// GraphQL fragment: Account
+// ====================================================
+
+export interface Account_user {
+  __typename: "User";
+  id: number;
+}
+
+export interface Account {
+  __typename: "Account";
+  user: Account_user;
+  name: string | null;
+  balance: number;
+}
+
+/* tslint:disable */
+/* eslint-disable */
+// @generated
+// This file was automatically generated and should not be edited.
+
+// ====================================================
 // GraphQL fragment: ExchangeRequest
 // ====================================================
 
+export interface ExchangeRequest_user {
+  __typename: "User";
+  id: number;
+}
+
 export interface ExchangeRequest {
   __typename: "ExchangeRequest";
+  user: ExchangeRequest_user | null;
   requestId: number;
   amountWant: number;
   bidRate: number;
