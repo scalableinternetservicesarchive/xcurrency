@@ -247,26 +247,27 @@ async function executeExchange(
                         [requsterUser.id, secondUser.id, real_request.requestId, exReq2.requestId]
                       ),
                     ])
-
+                    console.log(userToAccount)
                     //publish for the subscription
                     const [updatedUserToAccount, updatedSecondUserToAccount, updatedAdminFromAccount, updatedAdminToAccount] = await Promise.all([
                       Account.findOne(
-                        { userId: userToAccount.userId, name: userToAccount.name },
+                        { userId: userToAccount.userId, country: userToAccount.country, type: AccountType.Internal },
                         { relations: ['user'] }
                       ),
                       Account.findOne(
-                        { userId: secondUserToAccount.userId, name: secondUserToAccount.name },
+                        { userId: secondUserToAccount.userId, country: secondUserToAccount.country, type: AccountType.Internal },
                         { relations: ['user'] }
                       ),
                       Account.findOne(
-                        { userId: adminFromAccount.userId, name: adminFromAccount.name },
+                        { userId: adminFromAccount.userId, name: adminFromAccount.name, country: adminFromAccount.country},
                         { relations: ['user'] }
                       ),
                       Account.findOne(
-                        { userId: adminToAccount.userId, name: adminToAccount.name },
+                        { userId: adminToAccount.userId, name: adminToAccount.name, country: adminToAccount.country },
                         { relations: ['user'] }
                       )
                     ])
+
                     pubsub.publish('ACCOUNT_UPDATE_' + updatedUserToAccount?.userId, updatedUserToAccount)
                     pubsub.publish('ACCOUNT_UPDATE_' + updatedSecondUserToAccount?.userId, updatedSecondUserToAccount)
                     pubsub.publish('ACCOUNT_UPDATE_' + updatedAdminFromAccount?.userId, updatedAdminFromAccount)
