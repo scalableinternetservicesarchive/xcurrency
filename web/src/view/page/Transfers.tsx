@@ -1,6 +1,7 @@
 import { useQuery, useSubscription } from '@apollo/client'
 import { RouteComponentProps } from '@reach/router'
 import * as React from 'react'
+import { useEffect } from 'react'
 import {
   FetchExchangeRequests,
   FetchExchangeRequestsVariables,
@@ -40,7 +41,7 @@ export function MyTransfers() {
 
   const [requests, setRequests] = React.useState(data?.exchangeRequests? as any)
 
-  React.useEffect(() => {
+  useEffect(() => {
     setRequests(data?.exchangeRequests)
   }, [data])
 
@@ -49,7 +50,7 @@ export function MyTransfers() {
   })
 
   // update according to subscription
-  React.useEffect(() => {
+  useEffect(() => {
     console.log(sub.data);
     if (sub.data?.requestUpdates) {
       if (requests) {
