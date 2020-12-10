@@ -70,7 +70,7 @@ export function MyTransfers() {
           amountPay: sub.data.requestUpdates.amountPay,
           fromCurrency: sub.data.requestUpdates.fromCurrency,
           amountWant: sub.data.requestUpdates.amountWant,
-          toCurrench: sub.data.requestUpdates.toCurrency,
+          toCurrency: sub.data.requestUpdates.toCurrency,
           bidRate: sub.data.requestUpdates.bidRate,
         })
         setRequests(clonedRequests)
