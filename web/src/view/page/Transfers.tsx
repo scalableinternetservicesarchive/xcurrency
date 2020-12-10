@@ -38,10 +38,10 @@ export function MyTransfers() {
     // pollInterval: 1000,
   })
 
-  const [requestsUpdates, setRequestsUpdates] = React.useState(data?.exchangeRequests? as any)
+  const [requests, setRequests] = React.useState(data?.exchangeRequests? as any)
 
-  useEffect(() => {
-    setRequestsUpdates(data?.exchangeRequests)
+  React.useEffect(() => {
+    setRequests(data?.exchangeRequests)
   }, [data])
 
   const sub = useSubscription<RequestSubscription, RequestSubscriptionVariables>(subscribeRequests, {
@@ -49,25 +49,16 @@ export function MyTransfers() {
   })
 
   // update according to subscription
-  useEffect(() => {
+  React.useEffect(() => {
     console.log(sub.data);
-    if (sub.data?.accountUpdates) {
-      if (userAccounts) {
-        const clonedUserAccounts: any[] = []
-        userAccounts.forEach((account: any) =>
-          clonedUserAccounts.push({ name: account.name, balance: account.balance })
+    if (sub.data?.requestUpdates) {
+      if (requests) {
+        const clonedRequests: any[] = []
+        requests.forEach((request: any) =>
+          clonedRequests.push({ amountPay: request.amountPay, fromCurrency: request.fromCurrency, amountWant: request.amountWant, toCurrench: request.toCurrency, bidRate: request.bidRate  })
         )
-        let isUpdate = false
-        for (let i = 0; i < clonedUserAccounts.length; i++) {
-          if (clonedUserAccounts[i]?.name === sub.data?.accountUpdates.name) {
-            isUpdate = true
-            clonedUserAccounts[i].balance = sub.data?.accountUpdates.balance
-          }
-        }
-        if (!isUpdate) {
-          clonedUserAccounts.push({ name: sub.data.accountUpdates.name, balance: sub.data.accountUpdates.balance })
-        }
-        setUserAccounts(clonedUserAccounts)
+        clonedRequests.push({ amountPay: sub.data.requestUpdates.amountPay, fromCurrency: sub.data.requestUpdates.fromCurrency, amountWant: sub.data.requestUpdates.amountWant, toCurrench: sub.data.requestUpdates.toCurrency, bidRate: sub.data.requestUpdates.bidRate  })
+        setRequests(clonedRequests)
       }
     }
   }, [sub.data])
@@ -75,13 +66,13 @@ export function MyTransfers() {
   if (loading) {
     return <div>loading...</div>
   }
-  if (!data || data.exchangeRequests?.length === 0 || !requestsUpdates) {
+  if (!data || data.exchangeRequests?.length === 0 || !requests) {
     return <div>No Transfer History</div>
   }
 
   return (
     <div className="mw6">
-      {requestsUpdates
+      {requests
         ?.slice(0)
         .reverse()
         .map(r => (
@@ -96,3 +87,4 @@ export function MyTransfers() {
   )
 
 }
+
