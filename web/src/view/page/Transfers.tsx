@@ -12,6 +12,7 @@ import { UserContext } from '../auth/user'
 import { fetchExchangeRequests, subscribeRequests } from '../exchangeRequestQL/fetchExchangeRequest'
 import { AppRouteParams } from '../nav/route'
 import { Page } from './Page'
+
 interface TransfersProps extends RouteComponentProps, AppRouteParams {}
 
 export function Transfers(props: TransfersProps) {
@@ -32,14 +33,15 @@ export function MyTransfers() {
       console.error(err)
     })
 */
-  const user = React.useContext(UserContext)
-  const id = user.displayId()
+  const user1 = React.useContext(UserContext)
+  const user = React.useContext(UserContext).user
+  const id = user1.displayId()
   const { loading, data } = useQuery<FetchExchangeRequests, FetchExchangeRequestsVariables>(fetchExchangeRequests, {
     variables: { id },
     // pollInterval: 1000,
   })
 
-  const [requests, setRequests] = React.useState(data?.exchangeRequests? as any)
+  const [requests, setRequests] = React.useState(data?.exchangeRequests)
 
   useEffect(() => {
     setRequests(data?.exchangeRequests)
@@ -51,14 +53,26 @@ export function MyTransfers() {
 
   // update according to subscription
   useEffect(() => {
-    console.log(sub.data);
+    console.log(sub.data)
     if (sub.data?.requestUpdates) {
       if (requests) {
         const clonedRequests: any[] = []
         requests.forEach((request: any) =>
-          clonedRequests.push({ amountPay: request.amountPay, fromCurrency: request.fromCurrency, amountWant: request.amountWant, toCurrench: request.toCurrency, bidRate: request.bidRate  })
+          clonedRequests.push({
+            amountPay: request.amountPay,
+            fromCurrency: request.fromCurrency,
+            amountWant: request.amountWant,
+            toCurrench: request.toCurrency,
+            bidRate: request.bidRate,
+          })
         )
-        clonedRequests.push({ amountPay: sub.data.requestUpdates.amountPay, fromCurrency: sub.data.requestUpdates.fromCurrency, amountWant: sub.data.requestUpdates.amountWant, toCurrench: sub.data.requestUpdates.toCurrency, bidRate: sub.data.requestUpdates.bidRate  })
+        clonedRequests.push({
+          amountPay: sub.data.requestUpdates.amountPay,
+          fromCurrency: sub.data.requestUpdates.fromCurrency,
+          amountWant: sub.data.requestUpdates.amountWant,
+          toCurrency: sub.data.requestUpdates.toCurrency,
+          bidRate: sub.data.requestUpdates.bidRate,
+        })
         setRequests(clonedRequests)
       }
     }
@@ -86,6 +100,5 @@ export function MyTransfers() {
         ))}
     </div>
   )
-
 }
 
