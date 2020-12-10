@@ -1,6 +1,6 @@
 require('honeycomb-beeline')({
   writeKey: process.env.HONEYCOMB_KEY || '3ebf1b9f559d527d8eb3b0e08d859a8e',
-  dataset: process.env.APP_NAME || 'bespin',
+  dataset: process.env.APP_NAME || 'xcurrency',
   serviceName: process.env.APPSERVER_TAG || 'local',
   enabledInstrumentations: ['express', 'mysql2', 'react-dom/server'],
   sampleRate: 10,
@@ -32,7 +32,6 @@ import { ConnectionManager } from './graphql/ConnectionManager'
 import { AccountType, UserType } from './graphql/schema.types'
 import { expressLambdaProxy } from './lambda/handler'
 import { renderApp } from './render'
-
 const redis = new Redis();
 
 //maximum amount of divation of a curreny in a single transaction.
@@ -184,6 +183,7 @@ async function executeExchange(
       const match = await checkForMatch(request, exchangeRequests)
 
       if (match[0]) {
+        console.log('has match')
         //update admin account
         let adminUser_arr = await query('SELECT * from user where userType = ? LIMIT 1', [UserType.Admin])
         let adminUser = adminUser_arr[0]
@@ -216,14 +216,36 @@ async function executeExchange(
                     //update user2 account
                     secondUserToAccount.balance = Number(secondUserToAccount.balance) + Number(exReq2.amountWant)
                     await Promise.all([
-                      await query('update account set balance = ? where userId = ? and country = ?',[userToAccount.balance, userToAccount.userId, userToAccount.country]),
-                      await query('update account set balance = ? where userId = ? and country = ?', [secondUserToAccount.balance, secondUserToAccount.userId, secondUserToAccount.country]),
-                      await query('update account set balance = ? where userId = ? and country = ?', [adminFromAccount.balance, adminFromAccount.userId, adminFromAccount.country]),
-                      await query('update account set balance = ? where userId = ? and country = ?', [adminToAccount.balance, adminToAccount.userId, adminToAccount.country]),
+                      await query('update account set balance = ? where userId = ? and country = ? and type = ?', [
+                        userToAccount.balance,
+                        userToAccount.userId,
+                        userToAccount.country,
+                        AccountType.Internal,
+                      ]),
+                      await query('update account set balance = ? where userId = ? and country = ? and type = ?', [
+                        secondUserToAccount.balance,
+                        secondUserToAccount.userId,
+                        secondUserToAccount.country,
+                        AccountType.Internal,
+                      ]),
+                      await query('update account set balance = ? where userId = ? and country = ? and type = ?', [
+                        adminFromAccount.balance,
+                        adminFromAccount.userId,
+                        adminFromAccount.country,
+                        AccountType.Internal,
+                      ]),
+                      await query('update account set balance = ? where userId = ? and country = ? and type = ?', [
+                        adminToAccount.balance,
+                        adminToAccount.userId,
+                        adminToAccount.country,
+                        AccountType.Internal,
+                      ]),
                       await query('delete from exchange_request where requestId = ?', [real_request.requestId]),
                       await query('delete from exchange_request where requestId = ?', [exReq2.requestId]),
-                      await query('insert into transaction_record (requestId1, requestId2, user1Id, user2Id) values (?,?,?,?)',
-                       [requsterUser.id,secondUser.id, real_request.requestId, exReq2.requestId])
+                      await query(
+                        'insert into transaction_record (requestId1, requestId2, user1Id, user2Id) values (?,?,?,?)',
+                        [requsterUser.id, secondUser.id, real_request.requestId, exReq2.requestId]
+                      ),
                     ])
 
                     //publish for the subscription
@@ -272,6 +294,7 @@ async function findMatch() {
     let userAccount_arr = await query('SELECT * from account left join user on user.id = account.userId where account.userId = ? and account.country = ? and account.type = ?',
     [request.userId, request.fromCurrency,AccountType.Internal])
     let userAccount = userAccount_arr[0]
+    userAccount
   if (userAccount) {
     let userToAccount_arr = await query('SELECT * from account left join user on user.id = account.userId where account.userId = ? and account.country = ? and account.type = ?',
     [request.userId, request.toCurrency,AccountType.Internal])
@@ -284,9 +307,16 @@ async function findMatch() {
       const accountId = await query('INSERT INTO account (name, country, type, balance, userId) VALUES (?, ?, ?, ?,?)', [`Multicurrency Account - ${request.toCurrency}`, request.toCurrency, AccountType.Internal, 0.0, request.userId ])
       let newAccount_arr = await query('SELECT * from account where id = ?', [accountId.insertId])
       let newAccount = newAccount_arr[0]
+
+      const updatedAccount = await Account.findOne(
+        { userId: newAccount.userId, name: newAccount.name },
+        { relations: ['user'] }
+      )
+
       if (newAccount) {
+        pubsub.publish('ACCOUNT_UPDATE_' + updatedAccount?.userId, updatedAccount)
         const exReqData = new exReq(request.userId, request.bidRate, request.amountPay, request.amountWant, request.fromCurrency, request.toCurrency)
-       await executeExchange(request.currentRate, request, userAccount, newAccount, exReqData, request)
+        await executeExchange(request.currentRate, request, userAccount, newAccount, exReqData, request)
       }
     }
   }
@@ -301,7 +331,11 @@ async function findMatch() {
 //   res.send().status(200)
 // }))
 
-setInterval(findMatch, 3000) //increase time help the performance, but wait long time to recieve transaciton
+//if (isServiceEnabled(AppService.BACKGROUND)) {
+  setInterval(findMatch, 3000) //increase time help the performance, but wait long time to recieve transaciton
+//}
+
+//setInterval(findMatch, 3000) //increase time help the performance, but wait long time to recieve transaciton
 
 server.express.post(
   '/confirm-request',
@@ -313,10 +347,10 @@ server.express.post(
     const authToken = req.cookies.authToken
     //let paid = false;
     if (authToken) {
-      //console.log(authToken)
-      //const sql = await getSQLConnection()
-      //const session = await Session.findOne({ where: { authToken }, relations: ['user'] })
-      const session_arr = await query('SELECT * from session left join user on session.userId = user.id where session.authToken = ?', [authToken])
+      const session_arr = await query(
+        'SELECT * from session left join user on session.userId = user.id where session.authToken = ?',
+        [authToken]
+      )
       //console.log(session_str[0].authToken)
       const session = session_arr[0]
       if (session) {
@@ -328,9 +362,11 @@ server.express.post(
           let requesterUser1 = requesterUser1_arr[0]
 
           if (requesterUser1) {
-            let userAccount_arr = await query('SELECT * from account left join user on user.id = account.userId where account.userId = ? and account.country = ? and account.type = ?',
-             [requesterUser1?.id,exReqData.fromCurrency,AccountType.Internal])
-             let userAccount = userAccount_arr[0]
+            let userAccount_arr = await query(
+              'SELECT * from account left join user on user.id = account.userId where account.userId = ? and account.country = ? and account.type = ?',
+              [requesterUser1?.id, exReqData.fromCurrency, AccountType.Internal]
+            )
+            let userAccount = userAccount_arr[0]
 
             if (userAccount) {
               if (Number(userAccount.balance) - Number(exReqData.amountPay) >= 0) {
@@ -339,43 +375,51 @@ server.express.post(
                 res.setHeader('Content-Type', 'application/json')
                 res.status(200).send(JSON.stringify({ success: 1, notEnoughMoney: 0, noAccount: 0 }))
                 userAccount.balance = Number(userAccount.balance) - Number(exReqData.amountPay)
-                await query('update account set account.balance = ? where account.userId = ? and account.country = ?',[userAccount.balance, userAccount.userId, userAccount.country])
+                await query(
+                  'update account set account.balance = ? where account.userId = ? and account.country = ? and account.type = ?',
+                  [userAccount.balance, userAccount.userId, userAccount.country, AccountType.Internal]
+                )
 
                 //publish for the subscription
                 const [updatedUserAccount] = await Promise.all([
-                  Account.findOne(
-                    { userId: userAccount.userId, name: userAccount.name },
-                    { relations: ['user'] }
-                  )
+                  Account.findOne({ userId: userAccount.userId, name: userAccount.name }, { relations: ['user'] }),
                 ])
                 pubsub.publish('ACCOUNT_UPDATE_' + updatedUserAccount?.userId, updatedUserAccount)
 
                 //this is where insert the exchange request from user
-                await query('INSERT INTO exchange_request (exchange_request.amountWant, exchange_request.amountPay, exchange_request.bidRate,exchange_request.currentRate, exchange_request.fromCurrency, exchange_request.toCurrency, exchange_request.userId, exchange_request.check) VALUES(?,?,?,?,?,?,?,?)',
-                 [exReqData.amountWant,exReqData.amountPay,exReqData.bidRate,currentRate,exReqData.fromCurrency,exReqData.toCurrency,requesterUser1.id,false])
+                await query(
+                  'INSERT INTO exchange_request (exchange_request.amountWant, exchange_request.amountPay, exchange_request.bidRate,exchange_request.currentRate, exchange_request.fromCurrency, exchange_request.toCurrency, exchange_request.userId, exchange_request.check) VALUES(?,?,?,?,?,?,?,?)',
+                  [
+                    exReqData.amountWant,
+                    exReqData.amountPay,
+                    exReqData.bidRate,
+                    currentRate,
+                    exReqData.fromCurrency,
+                    exReqData.toCurrency,
+                    requesterUser1.id,
+                    false,
+                  ]
+                )
 
-                const {amountWant, amountPay, bidRate, fromCurrency, toCurrency } = exReqData;
+                const { amountWant, amountPay, bidRate, fromCurrency, toCurrency } = exReqData
                 const [updatedRequest] = await Promise.all([
                   ExchangeRequest.findOne(
                     { amountWant, amountPay, bidRate, fromCurrency, toCurrency, userId: requesterUser1.id },
                     { relations: ['user'] }
-                  )
+                  ),
                 ])
                 pubsub.publish('REQUEST_UPDATE_' + updatedRequest?.userId, updatedRequest)
-              }
-              else {
+              } else {
                 res.setHeader('Content-Type', 'application/json')
                 res.status(200).send(JSON.stringify({ success: 0, notEnoughMoney: 1, noAccount: 0 }))
               }
-            }
-            else {
+            } else {
               res.setHeader('Content-Type', 'application/json')
               res.status(200).send(JSON.stringify({ success: 0, notEnoughMoney: 0, noAccount: 1 }))
             }
           }
         })
-      }
-      else {
+      } else {
         //session not found, login
         res.redirect('/app/login')
       }

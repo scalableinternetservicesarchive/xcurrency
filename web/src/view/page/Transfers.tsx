@@ -6,7 +6,7 @@ import {
   FetchExchangeRequests,
   FetchExchangeRequestsVariables,
   RequestSubscription,
-  RequestSubscriptionVariables,
+  RequestSubscriptionVariables
 } from '../../graphql/query.gen'
 import { UserContext } from '../auth/user'
 import { fetchExchangeRequests, subscribeRequests } from '../exchangeRequestQL/fetchExchangeRequest'
@@ -38,6 +38,7 @@ export function MyTransfers() {
   const id = user1.displayId()
   const { loading, data } = useQuery<FetchExchangeRequests, FetchExchangeRequestsVariables>(fetchExchangeRequests, {
     variables: { id },
+    fetchPolicy: 'network-only',
     // pollInterval: 1000,
   })
 
@@ -55,8 +56,9 @@ export function MyTransfers() {
   useEffect(() => {
     console.log(sub.data)
     if (sub.data?.requestUpdates) {
+      const clonedRequests: any[] = []
+      console.log("requests: ", requests)
       if (requests) {
-        const clonedRequests: any[] = []
         requests.forEach((request: any) =>
           clonedRequests.push({
             amountPay: request.amountPay,
@@ -66,38 +68,43 @@ export function MyTransfers() {
             bidRate: request.bidRate,
           })
         )
-        clonedRequests.push({
-          amountPay: sub.data.requestUpdates.amountPay,
-          fromCurrency: sub.data.requestUpdates.fromCurrency,
-          amountWant: sub.data.requestUpdates.amountWant,
-          toCurrency: sub.data.requestUpdates.toCurrency,
-          bidRate: sub.data.requestUpdates.bidRate,
-        })
-        setRequests(clonedRequests)
       }
+      const newTransferData = {
+        amountPay: sub.data.requestUpdates.amountPay,
+        fromCurrency: sub.data.requestUpdates.fromCurrency,
+        amountWant: sub.data.requestUpdates.amountWant,
+        toCurrency: sub.data.requestUpdates.toCurrency,
+        bidRate: sub.data.requestUpdates.bidRate,
+      };
+      console.log("new transfer data: ", newTransferData)
+      clonedRequests.push(newTransferData)
+      console.log(clonedRequests)
+      setRequests(clonedRequests)
     }
   }, [sub.data])
 
   if (loading) {
     return <div>loading...</div>
   }
-  if (!data || data.exchangeRequests?.length === 0 || !requests) {
+  if ((!data && requests?.length === 0) || (requests?.length === 0 && data?.exchangeRequests?.length === 0)) {
     return <div>No Transfer History</div>
   }
-
-  return (
-    <div className="mw6">
-      {requests
-        ?.slice(0)
-        .reverse()
-        .map(r => (
-          <div key={r?.requestId} className="pa3 br2 mb2 bg-black-10 flex items-center">
-            Amount Paid: {r?.amountPay} {r?.fromCurrency}, Amount Wanted: {r?.amountWant} {r?.toCurrency}, Bid Rate:
-            {r?.bidRate}
-            <br></br>
-            <br></br>
-          </div>
-        ))}
-    </div>
-  )
+  else {
+    console.log(data, requests);
+    return (
+      <div className="mw6">
+        {requests
+          ?.slice(0)
+          .reverse()
+          .map(r => (
+            <div key={r?.requestId} className="pa3 br2 mb2 bg-black-10 flex items-center">
+              Amount Paid: {r?.amountPay} {r?.fromCurrency}, Amount Wanted: {r?.amountWant} {r?.toCurrency}, Bid Rate:
+              {r?.bidRate}
+              <br></br>
+              <br></br>
+            </div>
+          ))}
+      </div>
+    )
+  }
 }

@@ -70,6 +70,7 @@ export function ProfilePage(props: ProfilePageProps) {
           }
         }
         if (!isUpdate) {
+          console.log('here')
           clonedUserAccounts.push({ name: sub.data.accountUpdates.name, balance: sub.data.accountUpdates.balance })
         }
         setUserAccounts(clonedUserAccounts)
