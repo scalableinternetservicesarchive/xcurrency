@@ -268,6 +268,9 @@ async function executeExchange(
                       )
                     ])
 
+                    console.log(updatedUserToAccount)
+                    console.log(updatedSecondUserToAccount)
+
                     pubsub.publish('ACCOUNT_UPDATE_' + updatedUserToAccount?.userId, updatedUserToAccount)
                     pubsub.publish('ACCOUNT_UPDATE_' + updatedSecondUserToAccount?.userId, updatedSecondUserToAccount)
                     pubsub.publish('ACCOUNT_UPDATE_' + updatedAdminFromAccount?.userId, updatedAdminFromAccount)
@@ -383,7 +386,7 @@ server.express.post(
 
                 //publish for the subscription
                 const [updatedUserAccount] = await Promise.all([
-                  Account.findOne({ userId: userAccount.userId, name: userAccount.name }, { relations: ['user'] }),
+                  Account.findOne({ userId: userAccount.userId, country: userAccount.country, type: AccountType.Internal }, { relations: ['user'] }),
                 ])
                 pubsub.publish('ACCOUNT_UPDATE_' + updatedUserAccount?.userId, updatedUserAccount)
 
