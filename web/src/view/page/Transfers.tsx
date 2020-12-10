@@ -62,7 +62,7 @@ export function MyTransfers() {
             amountPay: request.amountPay,
             fromCurrency: request.fromCurrency,
             amountWant: request.amountWant,
-            toCurrench: request.toCurrency,
+            toCurrency: request.toCurrency,
             bidRate: request.bidRate,
           })
         )
